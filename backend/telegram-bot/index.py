@@ -251,7 +251,14 @@ def handle_callback_query(callback_query: dict, bot_token: str, db_url: str):
             
             team_id = pending_action['team_id']
             action_type = pending_action['action_type']
-            action_data = json.loads(pending_action['action_data']) if pending_action['action_data'] else {}
+            action_data_raw = pending_action['action_data']
+            
+            if isinstance(action_data_raw, str):
+                action_data = json.loads(action_data_raw) if action_data_raw else {}
+            elif isinstance(action_data_raw, dict):
+                action_data = action_data_raw
+            else:
+                action_data = {}
             
             if action == 'confirm':
                 if action_type == 'update':
