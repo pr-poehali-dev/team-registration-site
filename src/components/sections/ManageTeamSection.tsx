@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
 
 const API_URL = funcUrls.teams;
+const SETTINGS_URL = funcUrls['registration-settings'];
 
 interface Team {
   id: number;
@@ -43,6 +44,7 @@ export default function ManageTeamSection() {
   const [team, setTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     team_name: '',
     captain_name: '',
@@ -59,6 +61,20 @@ export default function ManageTeamSection() {
     support_telegram: ''
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadRegistrationStatus();
+  }, []);
+
+  const loadRegistrationStatus = async () => {
+    try {
+      const response = await fetch(SETTINGS_URL);
+      const data = await response.json();
+      setIsRegistrationOpen(data.is_open);
+    } catch (error) {
+      console.error('Failed to load registration status:', error);
+    }
+  };
 
   const handleFindTeam = async () => {
     if (!captainTelegram.trim()) {
@@ -102,6 +118,15 @@ export default function ManageTeamSection() {
 
   const handleEditTeam = () => {
     if (!team) return;
+
+    if (!isRegistrationOpen) {
+      toast({
+        title: "Редактирование недоступно",
+        description: "Регистрация завершена. Изменение команд больше не доступно.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const lines = team.members_info.split('\n');
     const parseRole = (line: string) => {
@@ -183,6 +208,15 @@ export default function ManageTeamSection() {
   const handleCancelRegistration = async () => {
     if (!team) return;
 
+    if (!isRegistrationOpen) {
+      toast({
+        title: "Отмена недоступна",
+        description: "Регистрация завершена. Отмена регистрации больше не доступна.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!confirm('Вы уверены, что хотите отменить регистрацию команды? Это действие нельзя отменить.')) {
       return;
     }
@@ -225,6 +259,22 @@ export default function ManageTeamSection() {
         </p>
       </div>
 
+      {!isRegistrationOpen && (
+        <Card className="border-orange-500/50 bg-orange-500/10">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Icon name="AlertCircle" size={24} className="text-orange-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-orange-500 mb-1">Регистрация завершена</h3>
+                <p className="text-sm text-muted-foreground">
+                  Период регистрации закрыт. Редактирование и отмена регистрации команд больше не доступны.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Найти мою команду</CardTitle>
@@ -262,7 +312,11 @@ export default function ManageTeamSection() {
                 </CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleEditTeam}>
+                <Button 
+                  size="sm" 
+                  onClick={handleEditTeam}
+                  disabled={!isRegistrationOpen}
+                >
                   <Icon name="Edit" size={16} className="mr-1" />
                   Редактировать
                 </Button>
@@ -270,6 +324,7 @@ export default function ManageTeamSection() {
                   size="sm" 
                   variant="destructive"
                   onClick={handleCancelRegistration}
+                  disabled={!isRegistrationOpen}
                 >
                   <Icon name="Trash2" size={16} className="mr-1" />
                   Отменить регистрацию
