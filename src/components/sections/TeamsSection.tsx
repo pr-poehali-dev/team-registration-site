@@ -337,17 +337,14 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                     </CardDescription>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Telegram:</span> {team.captain_telegram}
-                  </div>
-                  {team.members_info && (
-                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                {team.members_info && (
+                  <CardContent>
+                    <div className="p-4 bg-muted/50 rounded-lg">
                       <p className="text-sm font-medium mb-2">Состав команды:</p>
                       <p className="text-sm text-muted-foreground whitespace-pre-line">{team.members_info}</p>
                     </div>
-                  )}
-                </CardContent>
+                  </CardContent>
+                )}
               </Card>
             ))
           )}
