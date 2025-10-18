@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
-type Section = 'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule' | 'manage';
+type Section = 'register' | 'teams' | 'schedule' | 'manage';
 
 interface NavigationProps {
   activeSection: Section;
@@ -34,14 +34,6 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
           </div>
           <div className="flex gap-2">
             <Button 
-              variant={activeSection === 'home' ? 'default' : 'ghost'} 
-              onClick={() => onNavigate('home')}
-              className="transition-all"
-            >
-              <Icon name="Home" size={18} className="mr-2" />
-              Главная
-            </Button>
-            <Button 
               variant={activeSection === 'register' ? 'default' : 'ghost'} 
               onClick={() => onNavigate('register')}
               className="transition-all"
@@ -56,22 +48,6 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
             >
               <Icon name="Users" size={18} className="mr-2" />
               Команды
-            </Button>
-            <Button 
-              variant={activeSection === 'rules' ? 'default' : 'ghost'} 
-              onClick={() => onNavigate('rules')}
-              className="transition-all"
-            >
-              <Icon name="FileText" size={18} className="mr-2" />
-              Правила
-            </Button>
-            <Button 
-              variant={activeSection === 'contacts' ? 'default' : 'ghost'} 
-              onClick={() => onNavigate('contacts')}
-              className="transition-all"
-            >
-              <Icon name="Mail" size={18} className="mr-2" />
-              Контакты
             </Button>
             <Button 
               variant={activeSection === 'schedule' ? 'default' : 'ghost'} 

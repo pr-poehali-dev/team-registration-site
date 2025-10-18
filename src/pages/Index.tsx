@@ -2,11 +2,8 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import HomeSection from '@/components/sections/HomeSection';
 import RegisterSection from '@/components/sections/RegisterSection';
 import TeamsSection from '@/components/sections/TeamsSection';
-import RulesSection from '@/components/sections/RulesSection';
-import ContactsSection from '@/components/sections/ContactsSection';
 import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
 import AdminLogin from '@/components/AdminLogin';
@@ -27,10 +24,10 @@ interface Team {
   created_at: string;
 }
 
-type Section = 'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule' | 'manage';
+type Section = 'register' | 'teams' | 'schedule' | 'manage';
 
 export default function Index() {
-  const [activeSection, setActiveSection] = useState<Section>('home');
+  const [activeSection, setActiveSection] = useState<Section>('register');
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -241,7 +238,7 @@ export default function Index() {
   const handleLogout = () => {
     setIsAdmin(false);
     setIsAuthenticated(false);
-    setActiveSection('home');
+    setActiveSection('register');
     toast({
       title: "Выход выполнен",
       description: "Вы вышли из админ-панели",
@@ -264,10 +261,6 @@ export default function Index() {
       />
 
       <main className="container mx-auto px-4 py-12">
-        {activeSection === 'home' && (
-          <HomeSection onNavigate={setActiveSection} />
-        )}
-
         {activeSection === 'register' && (
           <RegisterSection 
             formData={formData}
@@ -284,14 +277,6 @@ export default function Index() {
             onStatusChange={handleStatusChange}
             onDeleteTeam={handleDeleteTeam}
           />
-        )}
-
-        {activeSection === 'rules' && (
-          <RulesSection onNavigateToContacts={() => setActiveSection('contacts')} />
-        )}
-
-        {activeSection === 'contacts' && (
-          <ContactsSection />
         )}
 
         {activeSection === 'schedule' && (
