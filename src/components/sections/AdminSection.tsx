@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
 import AdminManagement from '@/components/AdminManagement';
 import MatchManagement from '@/components/MatchManagement';
+import BracketImport from '@/components/BracketImport';
 
 const SETTINGS_URL = funcUrls['registration-settings'];
 
@@ -166,6 +167,8 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
       {isSuperAdmin && (
         <AdminManagement currentUsername={adminUsername} />
       )}
+
+      <BracketImport />
 
       <MatchManagement />
 

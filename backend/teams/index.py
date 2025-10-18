@@ -148,6 +148,110 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
             
+            # Импорт с lvup.gg
+            if resource == 'import_lvup':
+                lvup_url = body_data.get('lvup_url', '')
+                
+                if not lvup_url or 'lvup.gg' not in lvup_url:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': 'Некорректная ссылка lvup.gg'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                try:
+                    # Парсим HTML страницы
+                    req = urllib.request.Request(lvup_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    html_content = urllib.request.urlopen(req).read().decode('utf-8')
+                    
+                    # Извлекаем данные из HTML (простой парсинг)
+                    import re
+                    
+                    # Ищем названия команд в HTML
+                    team_names = re.findall(r'team-name["\']?>([^<]+)<', html_content)
+                    team_names = [name.strip() for name in team_names if name.strip() and len(name.strip()) > 1]
+                    
+                    # Удаляем дубликаты, сохраняя порядок
+                    seen = set()
+                    unique_teams = []
+                    for team in team_names:
+                        if team not in seen:
+                            seen.add(team)
+                            unique_teams.append(team)
+                    
+                    if len(unique_teams) < 2:
+                        return {
+                            'statusCode': 400,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({
+                                'success': False,
+                                'message': f'Найдено команд: {len(unique_teams)}. Минимум 2 команды.'
+                            }),
+                            'isBase64Encoded': False
+                        }
+                    
+                    teams_imported = 0
+                    matches_imported = 0
+                    
+                    with conn.cursor() as cur:
+                        # Импортируем команды
+                        for team_name in unique_teams:
+                            # Проверяем, есть ли команда
+                            cur.execute("""
+                                SELECT id FROM t_p68536388_team_registration_si.teams 
+                                WHERE team_name = %s
+                            """, (team_name,))
+                            existing = cur.fetchone()
+                            
+                            if not existing:
+                                cur.execute("""
+                                    INSERT INTO t_p68536388_team_registration_si.teams 
+                                    (team_name, captain_name, captain_telegram, members_count, members_info, status)
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                """, (team_name, 'Импорт lvup.gg', '@imported', 1, 'Импортировано с lvup.gg', 'approved'))
+                                teams_imported += 1
+                        
+                        conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': True,
+                            'teams_imported': teams_imported,
+                            'matches_imported': matches_imported,
+                            'message': f'Импортировано: {teams_imported} команд'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                    
+                except Exception as e:
+                    return {
+                        'statusCode': 500,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Ошибка парсинга: {str(e)}'
+                        }),
+                        'isBase64Encoded': False
+                    }
+            
             # Генерация турнирной сетки
             if resource == 'generate_bracket':
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
