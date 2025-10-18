@@ -182,32 +182,81 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     match_num = 1
                     
                     import math
+                    
+                    # Находим ближайшую степень двойки (для второго раунда)
+                    next_power_of_2 = 2 ** math.ceil(math.log2(team_count))
+                    
+                    # Команды с баем = сколько команд сразу во 2 раунд
+                    teams_with_bye = next_power_of_2 - (team_count - next_power_of_2)
+                    if teams_with_bye < 0:
+                        teams_with_bye = 0
+                    
+                    # Команды в первом раунде
+                    teams_in_round1 = team_count - teams_with_bye
+                    first_round_matches = teams_in_round1 // 2
+                    
                     rounds_needed = math.ceil(math.log2(team_count))
                     
-                    for i in range(0, team_count, 2):
-                        team1_id = approved_teams[i]['id']
-                        team2_id = approved_teams[i+1]['id'] if i+1 < team_count else None
+                    team_idx = 0
+                    
+                    # Создаём матчи первого раунда
+                    for i in range(first_round_matches):
+                        team1_id = approved_teams[team_idx]['id']
+                        team2_id = approved_teams[team_idx + 1]['id']
                         
-                        if team2_id:
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team2_id, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
-                        else:
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, team1_id, 'BYE', 'upcoming'))
+                        cur.execute("""
+                            INSERT INTO t_p68536388_team_registration_si.matches 
+                            (match_number, bracket_type, round_number, team1_id, team2_id, status)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                        """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
+                        
                         match_num += 1
                         matches_created += 1
+                        team_idx += 2
                     
-                    first_round_matches = (team_count + 1) // 2
+                    # Второй раунд: победители первого раунда + команды с баем
+                    if rounds_needed >= 2:
+                        round2_start = match_num
+                        num_round2_matches = next_power_of_2 // 2
+                        
+                        # Сначала создаём матчи для команд с баем
+                        bye_matches = 0
+                        while team_idx < team_count and bye_matches < num_round2_matches:
+                            if bye_matches < first_round_matches:
+                                # Победитель раунда 1 vs команда с баем
+                                bye_team_id = approved_teams[team_idx]['id']
+                                cur.execute("""
+                                    INSERT INTO t_p68536388_team_registration_si.matches 
+                                    (match_number, bracket_type, round_number, team1_placeholder, team2_id, status)
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                """, (match_num, 'upper', 2, f'Победитель #{bye_matches + 1}', bye_team_id, 'upcoming'))
+                                team_idx += 1
+                            else:
+                                break
+                            match_num += 1
+                            matches_created += 1
+                            bye_matches += 1
+                        
+                        # Затем создаём матчи между победителями первого раунда (если есть)
+                        remaining_r1_matches = first_round_matches - bye_matches
+                        for i in range(remaining_r1_matches // 2):
+                            source1 = bye_matches + 1 + i * 2
+                            source2 = bye_matches + 2 + i * 2
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 2, f'Победитель #{source1}', f'Победитель #{source2}', 'upcoming'))
+                            match_num += 1
+                            matches_created += 1
+                        
+                        previous_round_start = round2_start
+                    else:
+                        previous_round_start = 1
                     
-                    previous_round_start = 1
-                    for r in range(2, rounds_needed + 1):
-                        num_matches = max(1, first_round_matches // (2 ** (r - 1)))
+                    # Остальные раунды
+                    for r in range(3, rounds_needed + 1):
+                        num_matches = next_power_of_2 // (2 ** r)
                         for m in range(num_matches):
                             source_match_1 = previous_round_start + (m * 2)
                             source_match_2 = previous_round_start + (m * 2) + 1
