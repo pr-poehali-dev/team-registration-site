@@ -125,28 +125,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'PATCH':
-            # Обновить состав команды (только для админа)
+            # Обновить команду (только для админа)
             body_data = json.loads(event.get('body', '{}'))
             team_id = body_data.get('id')
+            team_name = body_data.get('team_name')
+            captain_name = body_data.get('captain_name')
+            captain_telegram = body_data.get('captain_telegram')
             members_info = body_data.get('members_info')
             
-            if not team_id or not members_info:
+            if not team_id:
                 return {
                     'statusCode': 400,
                     'headers': {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*'
                     },
-                    'body': json.dumps({'error': 'Team ID and members_info are required'}),
+                    'body': json.dumps({'error': 'Team ID is required'}),
                     'isBase64Encoded': False
                 }
             
             with conn.cursor() as cur:
                 cur.execute("""
                     UPDATE t_p68536388_team_registration_si.teams 
-                    SET members_info = %s, updated_at = CURRENT_TIMESTAMP
+                    SET team_name = %s, 
+                        captain_name = %s, 
+                        captain_telegram = %s,
+                        members_info = %s, 
+                        updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s
-                """, (members_info, team_id))
+                """, (team_name, captain_name, captain_telegram, members_info, team_id))
                 conn.commit()
             
             return {
@@ -155,7 +162,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'message': 'Team members updated successfully'}),
+                'body': json.dumps({'message': 'Team updated successfully'}),
                 'isBase64Encoded': False
             }
         

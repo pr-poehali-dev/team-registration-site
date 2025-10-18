@@ -31,6 +31,9 @@ interface TeamsSectionProps {
 }
 
 interface EditFormData {
+  team_name: string;
+  captain_name: string;
+  captain_telegram: string;
   top_player: string;
   top_telegram: string;
   jungle_player: string;
@@ -47,6 +50,9 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
   const [searchQuery, setSearchQuery] = useState('');
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
+    team_name: '',
+    captain_name: '',
+    captain_telegram: '',
     top_player: '',
     top_telegram: '',
     jungle_player: '',
@@ -99,6 +105,9 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
     const support = parseRole(lines[4] || '');
 
     setEditFormData({
+      team_name: team.team_name,
+      captain_name: team.captain_name,
+      captain_telegram: team.captain_telegram,
       top_player: top.playerName,
       top_telegram: top.telegram,
       jungle_player: jungle.playerName,
@@ -132,6 +141,9 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingTeam.id,
+          team_name: editFormData.team_name,
+          captain_name: editFormData.captain_name,
+          captain_telegram: editFormData.captain_telegram,
           members_info: membersInfo
         })
       });
@@ -494,13 +506,44 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Редактировать состав команды</DialogTitle>
+            <DialogTitle>Редактировать команду</DialogTitle>
             <DialogDescription>
-              Команда: {editingTeam?.team_name}
+              Изменение информации о команде и составе
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Название команды</Label>
+              <Input
+                value={editFormData.team_name}
+                onChange={(e) => setEditFormData({...editFormData, team_name: e.target.value})}
+                placeholder="Название команды"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Ник капитана</Label>
+                <Input
+                  value={editFormData.captain_name}
+                  onChange={(e) => setEditFormData({...editFormData, captain_name: e.target.value})}
+                  placeholder="Ник капитана"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telegram капитана</Label>
+                <Input
+                  value={editFormData.captain_telegram}
+                  onChange={(e) => setEditFormData({...editFormData, captain_telegram: e.target.value})}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+              <p className="text-sm font-medium mb-4">Состав команды</p>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Топ</Label>
