@@ -83,67 +83,6 @@ export default function BotSetup() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <Alert className="bg-blue-500/20 border-blue-400/50">
-              <Icon name="Info" className="h-4 w-4 text-blue-400" />
-              <AlertDescription className="text-gray-200 ml-2">
-                Перед запуском убедитесь, что вы:
-                <ol className="list-decimal ml-6 mt-2 space-y-1">
-                  <li>Создали бота через @BotFather в Telegram</li>
-                  <li>Получили токен бота</li>
-                  <li>Добавили токен в секреты проекта (TELEGRAM_BOT_TOKEN)</li>
-                </ol>
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Icon name="Rocket" className="h-5 w-5 text-purple-400" />
-                Инструкция по созданию бота
-              </h3>
-              
-              <div className="bg-slate-800/50 rounded-lg p-4 space-y-3 text-gray-200">
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">1</span>
-                  <div>
-                    <p className="font-medium">Откройте @BotFather в Telegram</p>
-                    <p className="text-sm text-gray-400">Официальный бот для создания другихботов</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                  <div>
-                    <p className="font-medium">Отправьте команду /newbot</p>
-                    <p className="text-sm text-gray-400">BotFather попросит вас придумать имя и username</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                  <div>
-                    <p className="font-medium">Скопируйте токен</p>
-                    <p className="text-sm text-gray-400">BotFather выдаст токен вида: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">4</span>
-                  <div>
-                    <p className="font-medium">Добавьте токен в секреты</p>
-                    <p className="text-sm text-gray-400">В настройках проекта добавьте секрет TELEGRAM_BOT_TOKEN со значением токена</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold">5</span>
-                  <div>
-                    <p className="font-medium">Нажмите кнопку "Запустить бота" ниже</p>
-                    <p className="text-sm text-gray-400">Система автоматически настроит webhook и запустит бота</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <Button
               onClick={setupBot}
               disabled={loading}
