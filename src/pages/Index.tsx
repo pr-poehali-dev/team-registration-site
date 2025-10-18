@@ -61,15 +61,15 @@ export default function Index() {
     e.preventDefault();
     
     const members = [
-      `Топ: ${formData.top_player}`,
-      `Лес: ${formData.jungle_player}`,
-      `Мид: ${formData.mid_player}`,
-      `АДК: ${formData.adc_player}`,
-      `Саппорт: ${formData.support_player}`
+      `Топ: ${formData.top_player} - Телеграм: ${formData.top_telegram}`,
+      `Лес: ${formData.jungle_player} - Телеграм: ${formData.jungle_telegram}`,
+      `Мид: ${formData.mid_player} - Телеграм: ${formData.mid_telegram}`,
+      `АДК: ${formData.adc_player} - Телеграм: ${formData.adc_telegram}`,
+      `Саппорт: ${formData.support_player} - Телеграм: ${formData.support_telegram}`
     ];
     
-    if (formData.sub1_player) members.push(`Запасной: ${formData.sub1_player}`);
-    if (formData.sub2_player) members.push(`Запасной: ${formData.sub2_player}`);
+    if (formData.sub1_player) members.push(`Запасной: ${formData.sub1_player} - Телеграм: ${formData.sub1_telegram}`);
+    if (formData.sub2_player) members.push(`Запасной: ${formData.sub2_player} - Телеграм: ${formData.sub2_telegram}`);
     
     const submissionData = {
       team_name: formData.team_name,
