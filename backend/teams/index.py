@@ -4,6 +4,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
 import urllib.request
+import random
+import string
+
+def generate_auth_code() -> str:
+    """Генерирует код регистрации в формате REG-XXXX-XXXX"""
+    part1 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    return f'REG-{part1}-{part2}'
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -685,10 +693,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'isBase64Encoded': False
                         }
                     
+                    auth_code = generate_auth_code()
+                    
                     cur.execute("""
                         INSERT INTO t_p68536388_team_registration_si.teams 
-                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, auth_code)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         body_data['team_name'],
@@ -696,7 +706,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         body_data['captain_telegram'],
                         5,
                         members_info,
-                        body_data.get('captain_email', 'no-email@provided.com')
+                        body_data.get('captain_email', 'no-email@provided.com'),
+                        auth_code
                     ))
                     team_id = cur.fetchone()[0]
                     conn.commit()
@@ -708,7 +719,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({
-                        'id': team_id, 
+                        'id': team_id,
+                        'auth_code': auth_code,
                         'message': 'Team registered successfully'
                     }),
                     'isBase64Encoded': False

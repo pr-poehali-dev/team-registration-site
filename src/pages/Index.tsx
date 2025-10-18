@@ -89,9 +89,12 @@ export default function Index() {
       });
       
       if (response.ok) {
+        const data = await response.json();
+        
         toast({
-          title: "Заявка отправлена",
-          description: "Ваша команда зарегистрирована и ожидает модерации",
+          title: "✅ Команда зарегистрирована!",
+          description: `Ваш код регистрации: ${data.auth_code}. Сохраните его для управления командой.`,
+          duration: 10000,
         });
         
         setFormData({
