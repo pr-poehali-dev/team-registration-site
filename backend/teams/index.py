@@ -181,57 +181,63 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     match_num = 1
                     
-                    if team_count == 8:
-                        for i in range(0, 8, 2):
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team2_id, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, approved_teams[i]['id'], approved_teams[i+1]['id'], 'upcoming'))
-                            match_num += 1
-                            matches_created += 1
-                        
-                        for r in range(2, 4):
-                            num_matches = 8 // (2 ** (r - 1))
-                            for _ in range(num_matches):
-                                cur.execute("""
-                                    INSERT INTO t_p68536388_team_registration_si.matches 
-                                    (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                                    VALUES (%s, %s, %s, %s, %s, %s)
-                                """, (match_num, 'upper', r, 'TBD', 'TBD', 'upcoming'))
-                                match_num += 1
-                                matches_created += 1
-                        
-                        for r in range(1, 7):
-                            num_matches = max(1, 4 // (2 ** ((r - 1) // 2)))
-                            for _ in range(num_matches):
-                                cur.execute("""
-                                    INSERT INTO t_p68536388_team_registration_si.matches 
-                                    (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                                    VALUES (%s, %s, %s, %s, %s, %s)
-                                """, (match_num, 'lower', r, 'TBD', 'TBD', 'upcoming'))
-                                match_num += 1
-                                matches_created += 1
-                        
-                        cur.execute("""
-                            INSERT INTO t_p68536388_team_registration_si.matches 
-                            (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, (match_num, 'grand_final', 1, 'TBD', 'TBD', 'upcoming'))
-                        matches_created += 1
+                    import math
+                    rounds_needed = math.ceil(math.log2(team_count))
                     
-                    else:
-                        for i in range(0, team_count - 1, 2):
-                            team1_id = approved_teams[i]['id'] if i < team_count else None
-                            team2_id = approved_teams[i+1]['id'] if i+1 < team_count else None
-                            
+                    for i in range(0, team_count, 2):
+                        team1_id = approved_teams[i]['id']
+                        team2_id = approved_teams[i+1]['id'] if i+1 < team_count else None
+                        
+                        if team2_id:
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_id, team2_id, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
                             """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
+                        else:
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 1, team1_id, 'BYE', 'upcoming'))
+                        match_num += 1
+                        matches_created += 1
+                    
+                    first_round_matches = (team_count + 1) // 2
+                    
+                    for r in range(2, rounds_needed + 1):
+                        num_matches = max(1, first_round_matches // (2 ** (r - 1)))
+                        for _ in range(num_matches):
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', r, 'TBD', 'TBD', 'upcoming'))
                             match_num += 1
                             matches_created += 1
+                    
+                    lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    for r in range(1, lower_rounds + 1):
+                        if r % 2 == 1:
+                            num_matches = max(1, first_round_matches // (2 ** ((r + 1) // 2)))
+                        else:
+                            num_matches = max(1, first_round_matches // (2 ** (r // 2 + 1)))
+                        
+                        for _ in range(num_matches):
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'lower', r, 'TBD', 'TBD', 'upcoming'))
+                            match_num += 1
+                            matches_created += 1
+                    
+                    cur.execute("""
+                        INSERT INTO t_p68536388_team_registration_si.matches 
+                        (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (match_num, 'grand_final', 1, 'TBD', 'TBD', 'upcoming'))
+                    matches_created += 1
                     
                     conn.commit()
                 
