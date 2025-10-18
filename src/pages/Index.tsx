@@ -86,9 +86,11 @@ export default function Index() {
       });
       
       if (response.ok) {
+        const result = await response.json();
         toast({
           title: "Заявка отправлена",
-          description: "Ваша команда зарегистрирована и ожидает модерации",
+          description: `Команда зарегистрирована! Ваш код авторизации: ${result.auth_code}. Сохраните его для редактирования команды!`,
+          duration: 10000,
         });
         
         setFormData({

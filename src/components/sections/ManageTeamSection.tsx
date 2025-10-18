@@ -21,6 +21,7 @@ interface Team {
   status: 'pending' | 'approved' | 'rejected';
   admin_comment: string;
   created_at: string;
+  auth_code: string;
 }
 
 interface EditFormData {
@@ -41,10 +42,12 @@ interface EditFormData {
 
 export default function ManageTeamSection() {
   const [captainTelegram, setCaptainTelegram] = useState('');
+  const [authCode, setAuthCode] = useState('');
   const [team, setTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [showAuthInput, setShowAuthInput] = useState(false);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     team_name: '',
     captain_name: '',
@@ -93,12 +96,14 @@ export default function ManageTeamSection() {
       
       if (data.team) {
         setTeam(data.team);
+        setShowAuthInput(true);
         toast({
           title: "Команда найдена",
-          description: `Команда "${data.team.team_name}" загружена`
+          description: `Команда "${data.team.team_name}" найдена. Введите код для доступа`
         });
       } else {
         setTeam(null);
+        setShowAuthInput(false);
         toast({
           title: "Команда не найдена",
           description: "У вас нет зарегистрированной команды",
@@ -162,7 +167,14 @@ export default function ManageTeamSection() {
   };
 
   const handleSaveEdit = async () => {
-    if (!team) return;
+    if (!team || !authCode) {
+      toast({
+        title: "Ошибка",
+        description: "Введите код авторизации",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const membersInfo = [
       `Топ: ${editFormData.top_player} - Телеграм: ${editFormData.top_telegram}`,
@@ -181,7 +193,8 @@ export default function ManageTeamSection() {
           team_name: editFormData.team_name,
           captain_name: editFormData.captain_name,
           captain_telegram: editFormData.captain_telegram,
-          members_info: membersInfo
+          members_info: membersInfo,
+          auth_code: authCode
         })
       });
 
@@ -194,19 +207,27 @@ export default function ManageTeamSection() {
         setCaptainTelegram(editFormData.captain_telegram);
         handleFindTeam();
       } else {
-        throw new Error('Update failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Update failed');
       }
     } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось обновить команду",
+        description: error instanceof Error ? error.message : "Не удалось обновить команду",
         variant: "destructive"
       });
     }
   };
 
   const handleCancelRegistration = async () => {
-    if (!team) return;
+    if (!team || !authCode) {
+      toast({
+        title: "Ошибка",
+        description: "Введите код авторизации",
+        variant: "destructive"
+      });
+      return;
+    }
 
     if (!isRegistrationOpen) {
       toast({
@@ -222,7 +243,7 @@ export default function ManageTeamSection() {
     }
 
     try {
-      const response = await fetch(`${API_URL}?id=${team.id}`, {
+      const response = await fetch(`${API_URL}?id=${team.id}&auth_code=${encodeURIComponent(authCode)}`, {
         method: 'DELETE'
       });
 
@@ -233,13 +254,16 @@ export default function ManageTeamSection() {
         });
         setTeam(null);
         setCaptainTelegram('');
+        setAuthCode('');
+        setShowAuthInput(false);
       } else {
-        throw new Error('Delete failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Delete failed');
       }
     } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось отменить регистрацию",
+        description: error instanceof Error ? error.message : "Не удалось отменить регистрацию",
         variant: "destructive"
       });
     }
@@ -280,7 +304,7 @@ export default function ManageTeamSection() {
           <CardTitle>Найти мою команду</CardTitle>
           <CardDescription>Введите Telegram, который вы указали при регистрации</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex gap-2">
             <div className="flex-1">
               <Input
@@ -295,6 +319,22 @@ export default function ManageTeamSection() {
               {isLoading ? 'Поиск...' : 'Найти'}
             </Button>
           </div>
+          
+          {showAuthInput && (
+            <div className="space-y-2">
+              <Label htmlFor="auth_code">Код авторизации</Label>
+              <Input
+                id="auth_code"
+                placeholder="Введите 6-значный код"
+                value={authCode}
+                onChange={(e) => setAuthCode(e.target.value.toUpperCase())}
+                maxLength={6}
+              />
+              <p className="text-sm text-muted-foreground">
+                Код был выдан вам при регистрации команды. Без него вы не сможете редактировать команду.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
