@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import TournamentBracket from '@/components/TournamentBracket';
 
 interface Match {
   id: number;
@@ -13,31 +14,82 @@ interface Match {
   status: 'upcoming' | 'live' | 'finished';
   time: string;
   round: string;
+  winner?: 1 | 2;
 }
 
 export default function ScheduleSection() {
   const [activeTab, setActiveTab] = useState('bracket');
 
-  // Пример данных для верхней сетки (Winner Bracket)
-  const upperBracket: Match[] = [
-    { id: 1, team1: 'Team Alpha', team2: 'Team Beta', round: '1/4 финала', time: '19 октября, 14:00', status: 'upcoming' },
-    { id: 2, team1: 'Team Gamma', team2: 'Team Delta', round: '1/4 финала', time: '19 октября, 15:00', status: 'upcoming' },
-    { id: 3, team1: 'Team Epsilon', team2: 'Team Zeta', round: '1/4 финала', time: '19 октября, 16:00', status: 'upcoming' },
-    { id: 4, team1: 'Team Eta', team2: 'Team Theta', round: '1/4 финала', time: '19 октября, 17:00', status: 'upcoming' },
+  // Верхняя сетка по раундам
+  const upperBracketRounds = [
+    // Round 1 (8 команд -> 4 матча)
+    [
+      { id: 8, team1: 'Theartofwar "Talent" - Jab', team2: 'Phyah "LebronJames" - Ze', score1: 2, score2: 0, winner: 1 as const },
+      { id: 4, team1: 'GoW_T "Kungfu" - Zeal', team2: 'Scorchie "Zaldarius" - Zeal', score1: 2, score2: 1, winner: 1 as const },
+      { id: 5, team1: 'Blowjay "Blowski" - Conc', team2: 'Leh "Marvel" - Jab', score1: 2, score2: 0, winner: 1 as const },
+      { id: 2, team1: 'Max_edt "Koo-teha" - Conc', team2: 'Dougfluie "Kurupt" - Zeal', score1: 2, score2: 1, winner: 1 as const },
+    ],
+    // Round 2 (4 команды -> 2 матча)
+    [
+      { id: 12, team1: 'Slownoma "Joint" - Zeal', team2: 'Winner of 8' },
+      { id: 13, team1: 'Winner of 5', team2: 'Winner of 2' },
+    ],
+    // Round 3 (2 команды -> 1 матч)
+    [
+      { id: 21, team1: 'Winner of 12', team2: 'Winner of 13' },
+    ],
+    // Semifinals
+    [
+      { id: 25, team1: 'Winner of 21', team2: 'Winner of Loser 26' },
+    ],
   ];
 
-  // Пример данных для нижней сетки (Loser Bracket)
-  const lowerBracket: Match[] = [
-    { id: 5, team1: 'TBD', team2: 'TBD', round: 'LB Round 1', time: 'TBD', status: 'upcoming' },
-    { id: 6, team1: 'TBD', team2: 'TBD', round: 'LB Round 1', time: 'TBD', status: 'upcoming' },
+  // Нижняя сетка по раундам
+  const lowerBracketRounds = [
+    // Loser Round 1
+    [
+      { id: 15, team1: 'Loser of 2', team2: 'Loser of 3' },
+      { id: 16, team1: 'Loser of 4', team2: 'Loser of 5' },
+    ],
+    // Loser Round 2
+    [
+      { id: 17, team1: 'Loser of 13', team2: 'Loser of 1' },
+      { id: 18, team1: 'Loser of 14', team2: 'Winner of 15' },
+    ],
+    // Loser Round 3
+    [
+      { id: 20, team1: 'Loser of 12', team2: 'Winner of 18' },
+      { id: 23, team1: 'Winner of 17', team2: 'Winner of 16' },
+    ],
+    // Loser Round 4
+    [
+      { id: 24, team1: 'Loser of 21', team2: 'Winner of 23' },
+    ],
+    // Loser Round 5
+    [
+      { id: 26, team1: 'Loser of 22', team2: 'Winner of 24' },
+    ],
+    // Loser Round 6
+    [
+      { id: 27, team1: 'Winner of 26', team2: 'Loser of 28' },
+    ],
   ];
 
-  // Пример расписания
+  // Гранд финал
+  const grandFinals = {
+    id: 28,
+    team1: 'Winner of 25',
+    team2: 'Winner of Loser Bracket',
+  };
+
+  // Расписание матчей
   const schedule: Match[] = [
-    { id: 1, team1: 'Team Alpha', team2: 'Team Beta', round: '1/4 финала', time: '19 октября, 14:00', status: 'upcoming' },
-    { id: 2, team1: 'Team Gamma', team2: 'Team Delta', round: '1/4 финала', time: '19 октября, 15:00', status: 'upcoming' },
-    { id: 3, team1: 'Team Epsilon', team2: 'Team Zeta', round: '1/4 финала', time: '19 октября, 16:00', status: 'upcoming' },
-    { id: 4, team1: 'Team Eta', team2: 'Team Theta', round: '1/4 финала', time: '19 октября, 17:00', status: 'upcoming' },
+    { id: 8, team1: 'Theartofwar "Talent"', team2: 'Phyah "LebronJames"', round: 'Round 1', time: '19 октября, 14:00', status: 'finished', score1: 2, score2: 0, winner: 1 },
+    { id: 4, team1: 'GoW_T "Kungfu"', team2: 'Scorchie "Zaldarius"', round: 'Round 1', time: '19 октября, 14:30', status: 'finished', score1: 2, score2: 1, winner: 1 },
+    { id: 5, team1: 'Blowjay "Blowski"', team2: 'Leh "Marvel"', round: 'Round 1', time: '19 октября, 15:00', status: 'finished', score1: 2, score2: 0, winner: 1 },
+    { id: 2, team1: 'Max_edt "Koo-teha"', team2: 'Dougfluie "Kurupt"', round: 'Round 1', time: '19 октября, 15:30', status: 'finished', score1: 2, score2: 1, winner: 1 },
+    { id: 12, team1: 'Slownoma "Joint"', team2: 'Winner of 8', round: 'Round 2', time: '19 октября, 16:00', status: 'upcoming' },
+    { id: 13, team1: 'Winner of 5', team2: 'Winner of 2', round: 'Round 2', time: '19 октября, 16:30', status: 'upcoming' },
   ];
 
   const getStatusBadge = (status: Match['status']) => {
@@ -59,17 +111,17 @@ export default function ScheduleSection() {
       </div>
       
       <div className="space-y-2">
-        <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+        <div className={`flex items-center justify-between p-2 rounded ${match.winner === 1 ? 'bg-green-500/10' : 'bg-muted/30'}`}>
           <span className="font-medium">{match.team1}</span>
           {match.score1 !== undefined && (
-            <span className="text-lg font-bold">{match.score1}</span>
+            <span className={`text-lg font-bold ${match.winner === 1 ? 'text-green-600' : ''}`}>{match.score1}</span>
           )}
         </div>
         <div className="text-center text-xs text-muted-foreground">vs</div>
-        <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+        <div className={`flex items-center justify-between p-2 rounded ${match.winner === 2 ? 'bg-green-500/10' : 'bg-muted/30'}`}>
           <span className="font-medium">{match.team2}</span>
           {match.score2 !== undefined && (
-            <span className="text-lg font-bold">{match.score2}</span>
+            <span className={`text-lg font-bold ${match.winner === 2 ? 'text-green-600' : ''}`}>{match.score2}</span>
           )}
         </div>
       </div>
@@ -105,51 +157,11 @@ export default function ScheduleSection() {
             </TabsList>
 
             <TabsContent value="bracket" className="space-y-8">
-              {/* Верхняя сетка */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon name="TrendingUp" size={20} className="text-green-500" />
-                  <h3 className="text-xl font-semibold">Верхняя сетка (Winner Bracket)</h3>
-                </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {upperBracket.map((match) => (
-                    <MatchCard key={match.id} match={match} showRound />
-                  ))}
-                </div>
-              </div>
-
-              {/* Нижняя сетка */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon name="TrendingDown" size={20} className="text-orange-500" />
-                  <h3 className="text-xl font-semibold">Нижняя сетка (Loser Bracket)</h3>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {lowerBracket.map((match) => (
-                    <MatchCard key={match.id} match={match} showRound />
-                  ))}
-                </div>
-              </div>
-
-              {/* Гранд финал */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon name="Crown" size={20} className="text-yellow-500" />
-                  <h3 className="text-xl font-semibold">Гранд финал</h3>
-                </div>
-                <div className="max-w-md mx-auto">
-                  <MatchCard 
-                    match={{ 
-                      id: 99, 
-                      team1: 'TBD', 
-                      team2: 'TBD', 
-                      round: 'Гранд финал', 
-                      time: 'TBD', 
-                      status: 'upcoming' 
-                    }} 
-                  />
-                </div>
-              </div>
+              <TournamentBracket 
+                upperMatches={upperBracketRounds}
+                lowerMatches={lowerBracketRounds}
+                finals={grandFinals}
+              />
             </TabsContent>
 
             <TabsContent value="schedule" className="space-y-4">
