@@ -36,6 +36,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             resource = params.get('resource')
             captain_telegram = params.get('captain_telegram')
             
+            # Экспорт команд в CSV
+            if resource == 'export':
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT team_name, captain_name, captain_telegram, 
+                               members_info, status, created_at::text
+                        FROM t_p68536388_team_registration_si.teams 
+                        ORDER BY created_at DESC
+                    """)
+                    teams = cur.fetchall()
+                
+                csv_lines = ['Team Name,Captain Name,Captain Telegram,Status,Created At,Members Info']
+                
+                for team in teams:
+                    members_clean = team['members_info'].replace('\n', ' | ').replace(',', ';')
+                    csv_lines.append(
+                        f'"{team["team_name"]}","{team["captain_name"]}","{team["captain_telegram"]}",'
+                        f'"{team["status"]}","{team["created_at"]}","{members_clean}"'
+                    )
+                
+                csv_content = '\n'.join(csv_lines)
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'csv': csv_content,
+                        'total': len(teams)
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             # Управление матчами
             if resource == 'matches':
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:

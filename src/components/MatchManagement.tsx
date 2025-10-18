@@ -38,6 +38,7 @@ export default function MatchManagement() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exportingTeams, setExportingTeams] = useState(false);
   const { toast } = useToast();
 
   const loadMatches = async () => {
@@ -72,6 +73,47 @@ export default function MatchManagement() {
     loadMatches();
     loadTeams();
   }, []);
+
+  const handleExportTeams = async () => {
+    setExportingTeams(true);
+    try {
+      const response = await fetch(`${API_URL}?resource=export`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const csvContent = data.csv;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `teams_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: 'Успешно',
+          description: `Экспортировано команд: ${data.total}`,
+        });
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось экспортировать команды',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setExportingTeams(false);
+    }
+  };
 
   const handleUpdateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,9 +175,24 @@ export default function MatchManagement() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Icon name="Swords" size={24} className="text-primary" />
-            <CardTitle>Управление матчами</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="Swords" size={24} className="text-primary" />
+              <CardTitle>Управление матчами</CardTitle>
+            </div>
+            <Button
+              onClick={handleExportTeams}
+              disabled={exportingTeams}
+              variant="outline"
+              size="sm"
+            >
+              {exportingTeams ? (
+                <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+              ) : (
+                <Icon name="Download" size={16} className="mr-2" />
+              )}
+              Экспорт команд (CSV)
+            </Button>
           </div>
           <CardDescription>
             Редактирование результатов матчей и обновление турнирной сетки
