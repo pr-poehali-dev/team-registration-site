@@ -65,24 +65,13 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
     isLastRound: boolean;
   }) => {
     const matchHeight = 80;
-    const gapBetweenMatches = 24;
+    const baseGap = 24;
     
-    const getSpacingForRound = (rIdx: number) => {
-      if (rIdx === 0) return gapBetweenMatches;
-      return Math.pow(2, rIdx) * gapBetweenMatches + (Math.pow(2, rIdx) - 1) * matchHeight;
-    };
+    // Расстояние между матчами в текущем раунде
+    const spacing = roundIdx === 0 ? baseGap : baseGap + (matchHeight + baseGap) * (Math.pow(2, roundIdx) - 1);
     
-    const getTopOffsetForRound = (rIdx: number) => {
-      if (rIdx === 0) return 0;
-      let offset = 0;
-      for (let i = 0; i < rIdx; i++) {
-        offset += matchHeight / 2 + getSpacingForRound(i) / 2;
-      }
-      return offset;
-    };
-
-    const spacing = getSpacingForRound(roundIdx);
-    const topOffset = getTopOffsetForRound(roundIdx);
+    // Верхний отступ для выравнивания раунда
+    const topOffset = roundIdx === 0 ? 0 : (matchHeight + baseGap) * (Math.pow(2, roundIdx - 1) - 1) / 2 + (matchHeight / 2) * (Math.pow(2, roundIdx - 1));
 
     return (
       <div className="flex items-start">
