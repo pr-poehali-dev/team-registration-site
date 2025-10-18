@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -8,6 +8,9 @@ import TeamsSection from '@/components/sections/TeamsSection';
 import RulesSection from '@/components/sections/RulesSection';
 import ContactsSection from '@/components/sections/ContactsSection';
 import ScheduleSection from '@/components/sections/ScheduleSection';
+import funcUrls from '../../backend/func2url.json';
+
+const API_URL = funcUrls.teams;
 
 interface Team {
   id: number;
@@ -40,32 +43,82 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    toast({
-      title: "Заявка отправлена",
-      description: "Ваша команда зарегистрирована и ожидает модерации",
-    });
-
-    setFormData({
-      team_name: '',
-      captain_name: '',
-      captain_telegram: '',
-      members_count: '',
-      members_info: ''
-    });
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Заявка отправлена",
+          description: "Ваша команда зарегистрирована и ожидает модерации",
+        });
+        
+        setFormData({
+          team_name: '',
+          captain_name: '',
+          captain_telegram: '',
+          members_count: '',
+          members_info: ''
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось отправить заявку",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Проблема с подключением к серверу",
+        variant: "destructive"
+      });
+    }
   };
 
   const loadTeams = async () => {
-    toast({
-      title: "Загрузка команд",
-      description: "Данные обновлены",
-    });
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setTeams(data.teams || []);
+      toast({
+        title: "Загрузка команд",
+        description: "Данные обновлены",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить команды",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleStatusChange = async (teamId: number, newStatus: 'approved' | 'rejected') => {
-    toast({
-      title: "Статус обновлен",
-      description: `Команда ${newStatus === 'approved' ? 'одобрена' : 'отклонена'}`,
-    });
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: teamId, status: newStatus })
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Статус обновлен",
+          description: `Команда ${newStatus === 'approved' ? 'одобрена' : 'отклонена'}`,
+        });
+        loadTeams();
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить статус",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleTeamsClick = () => {

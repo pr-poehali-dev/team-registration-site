@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Get all teams",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "teams": []
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new team",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "team_name": "Test Team",
+        "captain_name": "John Doe",
+        "captain_telegram": "@johndoe",
+        "members_count": "5",
+        "members_info": "Test members"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
