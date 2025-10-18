@@ -115,9 +115,10 @@ export default function Index() {
           sub2_telegram: ''
         });
       } else {
+        const errorData = await response.json();
         toast({
           title: "Ошибка",
-          description: "Не удалось отправить заявку",
+          description: errorData.error || "Не удалось отправить заявку",
           variant: "destructive"
         });
       }

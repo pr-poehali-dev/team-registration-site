@@ -72,32 +72,63 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             members_info = '\n'.join(members_list)
             
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO t_p68536388_team_registration_si.teams 
-                    (team_name, captain_name, captain_telegram, members_count, members_info, captain_email)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (
-                    body_data['team_name'],
-                    body_data['captain_name'],
-                    body_data['captain_telegram'],
-                    5,
-                    members_info,
-                    body_data.get('captain_email', 'no-email@provided.com')
-                ))
-                team_id = cur.fetchone()[0]
-                conn.commit()
-            
-            return {
-                'statusCode': 201,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'id': team_id, 'message': 'Team registered successfully'}),
-                'isBase64Encoded': False
-            }
+            try:
+                with conn.cursor() as cur:
+                    # Проверка на существующего капитана
+                    cur.execute("""
+                        SELECT id FROM t_p68536388_team_registration_si.teams 
+                        WHERE captain_telegram = %s
+                    """, (body_data['captain_telegram'],))
+                    
+                    existing_team = cur.fetchone()
+                    if existing_team:
+                        return {
+                            'statusCode': 409,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({'error': 'Вы уже зарегистрировали команду. Один человек может зарегистрировать только одну команду.'}),
+                            'isBase64Encoded': False
+                        }
+                    
+                    cur.execute("""
+                        INSERT INTO t_p68536388_team_registration_si.teams 
+                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                    """, (
+                        body_data['team_name'],
+                        body_data['captain_name'],
+                        body_data['captain_telegram'],
+                        5,
+                        members_info,
+                        body_data.get('captain_email', 'no-email@provided.com')
+                    ))
+                    team_id = cur.fetchone()[0]
+                    conn.commit()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'id': team_id, 'message': 'Team registered successfully'}),
+                    'isBase64Encoded': False
+                }
+            except Exception as e:
+                if 'duplicate key' in str(e).lower() or 'unique' in str(e).lower():
+                    return {
+                        'statusCode': 409,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Вы уже зарегистрировали команду. Один человек может зарегистрировать только одну команду.'}),
+                        'isBase64Encoded': False
+                    }
+                raise
         
         elif method == 'PUT':
             # Обновить статус команды (только для админа)
