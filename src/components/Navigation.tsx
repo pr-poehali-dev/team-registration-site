@@ -65,6 +65,14 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
               <Icon name="Settings" size={18} className="mr-2" />
               Моя команда
             </Button>
+            <Button 
+              variant="ghost"
+              onClick={() => window.location.href = '/setup-bot'}
+              className="transition-all"
+            >
+              <Icon name="Bot" size={18} className="mr-2" />
+              Бот
+            </Button>
           </div>
           <Button
             variant={isAdmin ? 'destructive' : 'outline'}
