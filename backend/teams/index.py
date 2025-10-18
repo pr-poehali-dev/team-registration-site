@@ -56,6 +56,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Создать новую заявку
             body_data = json.loads(event.get('body', '{}'))
             
+            # Формируем members_info из всех полей
+            members_list = [
+                f"Топ: {body_data.get('top_player', '')} ({body_data.get('top_telegram', '')})",
+                f"Лес: {body_data.get('jungle_player', '')} ({body_data.get('jungle_telegram', '')})",
+                f"Мид: {body_data.get('mid_player', '')} ({body_data.get('mid_telegram', '')})",
+                f"АДК: {body_data.get('adc_player', '')} ({body_data.get('adc_telegram', '')})",
+                f"Саппорт: {body_data.get('support_player', '')} ({body_data.get('support_telegram', '')})"
+            ]
+            
+            if body_data.get('sub1_player'):
+                members_list.append(f"Запасной 1: {body_data.get('sub1_player', '')} ({body_data.get('sub1_telegram', '')})")
+            if body_data.get('sub2_player'):
+                members_list.append(f"Запасной 2: {body_data.get('sub2_player', '')} ({body_data.get('sub2_telegram', '')})")
+            
+            members_info = '\n'.join(members_list)
+            
             with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO t_p68536388_team_registration_si.teams 
@@ -66,8 +82,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     body_data['team_name'],
                     body_data['captain_name'],
                     body_data['captain_telegram'],
-                    int(body_data['members_count']),
-                    body_data.get('members_info', ''),
+                    5,
+                    members_info,
                     body_data.get('captain_email', 'no-email@provided.com')
                 ))
                 team_id = cur.fetchone()[0]

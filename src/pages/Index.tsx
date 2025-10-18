@@ -40,7 +40,21 @@ export default function Index() {
     captain_name: '',
     captain_telegram: '',
     members_count: '5',
-    members_info: ''
+    members_info: '',
+    top_player: '',
+    top_telegram: '',
+    jungle_player: '',
+    jungle_telegram: '',
+    mid_player: '',
+    mid_telegram: '',
+    adc_player: '',
+    adc_telegram: '',
+    support_player: '',
+    support_telegram: '',
+    sub1_player: '',
+    sub1_telegram: '',
+    sub2_player: '',
+    sub2_telegram: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,7 +78,21 @@ export default function Index() {
           captain_name: '',
           captain_telegram: '',
           members_count: '5',
-          members_info: ''
+          members_info: '',
+          top_player: '',
+          top_telegram: '',
+          jungle_player: '',
+          jungle_telegram: '',
+          mid_player: '',
+          mid_telegram: '',
+          adc_player: '',
+          adc_telegram: '',
+          support_player: '',
+          support_telegram: '',
+          sub1_player: '',
+          sub1_telegram: '',
+          sub2_player: '',
+          sub2_telegram: ''
         });
       } else {
         toast({
