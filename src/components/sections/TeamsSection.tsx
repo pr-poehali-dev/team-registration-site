@@ -42,11 +42,12 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
   const formatMembersInfo = (membersInfo: string, showTelegram: boolean): string[] => {
     if (!membersInfo) return [];
     
-    return membersInfo.split('\n').map(line => {
+    return membersInfo.split('\n').filter(line => line.trim()).map(line => {
       if (showTelegram) {
-        return line;
+        return line.trim();
       } else {
-        return line.replace(/ - Телеграм: @?\w+/g, '');
+        // Убираем всё после " - Телеграм:"
+        return line.split(' - Телеграм:')[0].trim();
       }
     });
   };
