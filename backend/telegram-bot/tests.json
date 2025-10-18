@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Health check - empty body",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 200,
+      "expectedBody": {
+        "ok": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
