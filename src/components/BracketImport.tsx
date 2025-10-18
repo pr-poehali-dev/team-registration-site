@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import funcUrls from '../../backend/func2url.json';
@@ -9,24 +9,26 @@ import funcUrls from '../../backend/func2url.json';
 const TEAMS_URL = funcUrls.teams;
 
 export default function BracketImport() {
-  const [lvupUrl, setLvupUrl] = useState('');
+  const [teamsList, setTeamsList] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleImport = async () => {
-    if (!lvupUrl.trim()) {
+    if (!teamsList.trim()) {
       toast({
         title: 'Ошибка',
-        description: 'Введите ссылку на турнирную сетку lvup.gg',
+        description: 'Введите список команд',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!lvupUrl.includes('lvup.gg')) {
+    const teams = teamsList.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+
+    if (teams.length < 2) {
       toast({
         title: 'Ошибка',
-        description: 'Некорректная ссылка. Используйте ссылку с lvup.gg',
+        description: 'Нужно минимум 2 команды',
         variant: 'destructive',
       });
       return;
@@ -41,8 +43,8 @@ export default function BracketImport() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          resource: 'import_lvup',
-          lvup_url: lvupUrl.trim(),
+          resource: 'import_teams_list',
+          teams: teams,
         }),
       });
 
@@ -51,9 +53,9 @@ export default function BracketImport() {
       if (data.success) {
         toast({
           title: 'Успешно',
-          description: `Импортировано команд: ${data.teams_imported || 0}, матчей: ${data.matches_imported || 0}`,
+          description: `Импортировано команд: ${data.teams_imported || 0}`,
         });
-        setLvupUrl('');
+        setTeamsList('');
       } else {
         toast({
           title: 'Ошибка импорта',
@@ -80,34 +82,32 @@ export default function BracketImport() {
           Импорт турнирной сетки
         </CardTitle>
         <CardDescription>
-          Загрузите готовую сетку с lvup.gg для автоматического создания команд и матчей
+          Импортируйте список команд для автоматического добавления в базу
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Ссылка на турнир lvup.gg</label>
-          <div className="flex gap-2">
-            <Input
-              value={lvupUrl}
-              onChange={(e) => setLvupUrl(e.target.value)}
-              placeholder="https://lvup.gg/ru/easy/bracket/..."
-              className="flex-1"
-              disabled={loading}
-            />
-            <Button onClick={handleImport} disabled={loading || !lvupUrl.trim()}>
-              {loading ? (
-                <>
-                  <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
-                  Импорт...
-                </>
-              ) : (
-                <>
-                  <Icon name="Download" size={18} className="mr-2" />
-                  Импортировать
-                </>
-              )}
-            </Button>
-          </div>
+          <label className="text-sm font-medium">Список команд (каждая с новой строки)</label>
+          <Textarea
+            value={teamsList}
+            onChange={(e) => setTeamsList(e.target.value)}
+            placeholder="Team Alpha\nTeam Bravo\nTeam Charlie\nTeam Delta"
+            className="min-h-[200px] font-mono"
+            disabled={loading}
+          />
+          <Button onClick={handleImport} disabled={loading || !teamsList.trim()} className="w-full">
+            {loading ? (
+              <>
+                <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                Импорт...
+              </>
+            ) : (
+              <>
+                <Icon name="Download" size={18} className="mr-2" />
+                Импортировать команды
+              </>
+            )}
+          </Button>
         </div>
 
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
@@ -116,10 +116,10 @@ export default function BracketImport() {
             <div className="text-sm space-y-1">
               <p className="font-medium text-blue-500">Как использовать:</p>
               <ol className="space-y-1 text-muted-foreground list-decimal list-inside">
-                <li>Создайте турнир на lvup.gg и заполните участников</li>
-                <li>Скопируйте ссылку на страницу турнира</li>
-                <li>Вставьте ссылку в поле выше и нажмите "Импортировать"</li>
-                <li>Система автоматически создаст команды и матчи в базе</li>
+                <li>Скопируйте список команд из турнирной сетки (lvup.gg или любой другой)</li>
+                <li>Вставьте команды в поле выше (каждая команда с новой строки)</li>
+                <li>Нажмите "Импортировать команды"</li>
+                <li>Команды автоматически добавятся со статусом "одобрено"</li>
               </ol>
             </div>
           </div>
