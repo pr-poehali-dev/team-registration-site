@@ -41,6 +41,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         update = json.loads(event.get('body', '{}'))
         
+        if 'callback_query' in update:
+            return handle_callback_query(update['callback_query'], bot_token, db_url)
+        
         if 'message' not in update:
             return {
                 'statusCode': 200,
@@ -217,6 +220,115 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
 
+def handle_callback_query(callback_query: dict, bot_token: str, db_url: str):
+    try:
+        callback_id = callback_query['id']
+        chat_id = callback_query['message']['chat']['id']
+        message_id = callback_query['message']['message_id']
+        data = callback_query['data']
+        
+        action, action_id = data.split('_', 1)
+        action_id = int(action_id)
+        
+        conn = psycopg2.connect(db_url)
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT team_id, action_type, action_data, status 
+                    FROM t_p68536388_team_registration_si.pending_actions 
+                    WHERE id = %s
+                """, (action_id,))
+                pending_action = cur.fetchone()
+            
+            if not pending_action or pending_action['status'] != 'pending':
+                answer_callback_query(bot_token, callback_id, '❌ Действие уже обработано или не найдено')
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'ok': True}),
+                    'isBase64Encoded': False
+                }
+            
+            team_id = pending_action['team_id']
+            action_type = pending_action['action_type']
+            action_data = json.loads(pending_action['action_data']) if pending_action['action_data'] else {}
+            
+            if action == 'confirm':
+                if action_type == 'update':
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            UPDATE t_p68536388_team_registration_si.teams 
+                            SET team_name = %s, 
+                                captain_name = %s, 
+                                captain_telegram = %s,
+                                members_info = %s, 
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE id = %s
+                        """, (
+                            action_data['team_name'],
+                            action_data['captain_name'],
+                            action_data['captain_telegram'],
+                            action_data['members_info'],
+                            team_id
+                        ))
+                        conn.commit()
+                    
+                    edit_message(bot_token, chat_id, message_id, 
+                        '✅ <b>Изменения подтверждены и применены!</b>\n\n'
+                        f'Команда "{action_data["team_name"]}" успешно обновлена.')
+                    answer_callback_query(bot_token, callback_id, '✅ Изменения применены')
+                
+                elif action_type == 'delete':
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            DELETE FROM t_p68536388_team_registration_si.teams WHERE id = %s
+                        """, (team_id,))
+                        conn.commit()
+                    
+                    edit_message(bot_token, chat_id, message_id,
+                        '✅ <b>Удаление подтверждено!</b>\n\n'
+                        'Ваша команда удалена из системы. Вы можете зарегистрироваться снова используя /register')
+                    answer_callback_query(bot_token, callback_id, '✅ Команда удалена')
+                
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE t_p68536388_team_registration_si.pending_actions 
+                        SET status = 'confirmed' WHERE id = %s
+                    """, (action_id,))
+                    conn.commit()
+            
+            elif action == 'cancel':
+                edit_message(bot_token, chat_id, message_id,
+                    '❌ <b>Действие отклонено</b>\n\n'
+                    'Изменения не были применены.')
+                answer_callback_query(bot_token, callback_id, '❌ Действие отклонено')
+                
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE t_p68536388_team_registration_si.pending_actions 
+                        SET status = 'cancelled' WHERE id = %s
+                    """, (action_id,))
+                    conn.commit()
+        
+        finally:
+            conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'ok': True}),
+            'isBase64Encoded': False
+        }
+    
+    except Exception as e:
+        print(f"Error handling callback: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': str(e)}),
+            'isBase64Encoded': False
+        }
+
 def send_message(bot_token: str, chat_id: int, text: str):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {
@@ -236,4 +348,46 @@ def send_message(bot_token: str, chat_id: int, text: str):
             return json.loads(response.read().decode('utf-8'))
     except Exception as e:
         print(f"Failed to send message: {str(e)}")
+        return None
+
+def edit_message(bot_token: str, chat_id: int, message_id: int, text: str):
+    url = f"https://api.telegram.org/bot{bot_token}/editMessageText"
+    data = {
+        'chat_id': chat_id,
+        'message_id': message_id,
+        'text': text,
+        'parse_mode': 'HTML'
+    }
+    
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode('utf-8'),
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except Exception as e:
+        print(f"Failed to edit message: {str(e)}")
+        return None
+
+def answer_callback_query(bot_token: str, callback_id: str, text: str):
+    url = f"https://api.telegram.org/bot{bot_token}/answerCallbackQuery"
+    data = {
+        'callback_query_id': callback_id,
+        'text': text
+    }
+    
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode('utf-8'),
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except Exception as e:
+        print(f"Failed to answer callback: {str(e)}")
         return None

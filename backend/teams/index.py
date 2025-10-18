@@ -204,19 +204,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            with conn.cursor() as cur:
-                cur.execute("""
-                    UPDATE t_p68536388_team_registration_si.teams 
-                    SET team_name = %s, 
-                        captain_name = %s, 
-                        captain_telegram = %s,
-                        members_info = %s, 
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                """, (team_name, captain_name, captain_telegram, members_info, team_id))
-                conn.commit()
+            action_data = {
+                'team_name': team_name,
+                'captain_name': captain_name,
+                'captain_telegram': captain_telegram,
+                'members_info': members_info
+            }
             
-            send_telegram_notification(conn, team_id, 'updated')
+            action_id = create_pending_action(conn, team_id, 'update', action_data)
+            send_confirmation_request(conn, team_id, action_id, 'update', action_data)
             
             return {
                 'statusCode': 200,
@@ -224,7 +220,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'message': 'Team updated'}),
+                'body': json.dumps({'message': 'Confirmation request sent to captain'}),
                 'isBase64Encoded': False
             }
         
@@ -233,13 +229,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             params = event.get('queryStringParameters', {})
             team_id = params.get('id')
             
-            send_telegram_notification(conn, team_id, 'deleted')
-            
-            with conn.cursor() as cur:
-                cur.execute("""
-                    DELETE FROM t_p68536388_team_registration_si.teams WHERE id = %s
-                """, (team_id,))
-                conn.commit()
+            action_id = create_pending_action(conn, int(team_id), 'delete', {})
+            send_confirmation_request(conn, int(team_id), action_id, 'delete', {})
             
             return {
                 'statusCode': 200,
@@ -247,7 +238,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'message': 'Team deleted'}),
+                'body': json.dumps({'message': 'Confirmation request sent to captain'}),
                 'isBase64Encoded': False
             }
         
@@ -265,7 +256,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     finally:
         conn.close()
 
-def send_telegram_notification(conn, team_id: int, action: str):
+def create_pending_action(conn, team_id: int, action_type: str, action_data: dict) -> int:
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO t_p68536388_team_registration_si.pending_actions 
+            (team_id, action_type, action_data, status)
+            VALUES (%s, %s, %s, 'pending')
+            RETURNING id
+        """, (team_id, action_type, json.dumps(action_data)))
+        action_id = cur.fetchone()[0]
+        conn.commit()
+        return action_id
+
+def send_confirmation_request(conn, team_id: int, action_id: int, action_type: str, action_data: dict):
     try:
         bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
         if not bot_token:
@@ -300,34 +303,46 @@ def send_telegram_notification(conn, team_id: int, action: str):
         
         chat_id = user['chat_id']
         
-        if action == 'updated':
+        if action_type == 'update':
             message = (
-                f"⚠️ <b>Ваша команда была изменена администратором</b>\n\n"
-                f"🏆 Команда: {team['team_name']}\n"
-                f"👤 Капитан: {team['captain_name']}\n\n"
-                f"📋 Новый состав:\n{team['members_info']}\n\n"
-                f"Используйте /myteam для просмотра деталей"
+                f"⚠️ <b>Запрос на изменение команды</b>\n\n"
+                f"🏆 Текущая команда: {team['team_name']}\n\n"
+                f"📝 <b>Новые данные:</b>\n"
+                f"Название: {action_data.get('team_name', team['team_name'])}\n"
+                f"Капитан: {action_data.get('captain_name', team['captain_name'])}\n"
+                f"Telegram: {action_data.get('captain_telegram', team['captain_telegram'])}\n\n"
+                f"📋 Новый состав:\n{action_data.get('members_info', team['members_info'])}\n\n"
+                f"Подтвердите или отклоните изменения:"
             )
-        elif action == 'deleted':
+        elif action_type == 'delete':
             message = (
-                f"❌ <b>Ваша команда была удалена администратором</b>\n\n"
+                f"❌ <b>Запрос на удаление команды</b>\n\n"
                 f"🏆 Команда: {team['team_name']}\n"
                 f"👤 Капитан: {team['captain_name']}\n\n"
-                f"Вы можете зарегистрироваться снова используя /register"
+                f"⚠️ Это действие нельзя отменить!\n\n"
+                f"Подтвердите или отклоните удаление:"
             )
         else:
             return
         
-        send_message(bot_token, chat_id, message)
+        keyboard = {
+            'inline_keyboard': [[
+                {'text': '✅ Подтвердить', 'callback_data': f'confirm_{action_id}'},
+                {'text': '❌ Отклонить', 'callback_data': f'cancel_{action_id}'}
+            ]]
+        }
+        
+        send_message_with_keyboard(bot_token, chat_id, message, keyboard)
     except Exception as e:
-        print(f"Failed to send notification: {str(e)}")
+        print(f"Failed to send confirmation request: {str(e)}")
 
-def send_message(bot_token: str, chat_id: int, text: str):
+def send_message_with_keyboard(bot_token: str, chat_id: int, text: str, keyboard: dict):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {
         'chat_id': chat_id,
         'text': text,
-        'parse_mode': 'HTML'
+        'parse_mode': 'HTML',
+        'reply_markup': keyboard
     }
     
     req = urllib.request.Request(
