@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import TournamentBracket from '@/components/TournamentBracket';
+import funcUrls from '../../../backend/func2url.json';
+
+const API_URL = funcUrls.teams;
 
 interface Match {
   id: number;
@@ -17,80 +20,138 @@ interface Match {
   winner?: 1 | 2;
 }
 
+interface DBMatch {
+  id: number;
+  match_number: number;
+  bracket_type: string;
+  round_number: number;
+  team1_name?: string;
+  team2_name?: string;
+  team1_placeholder?: string;
+  team2_placeholder?: string;
+  score1?: number;
+  score2?: number;
+  winner?: number;
+  status: string;
+  scheduled_time?: string;
+}
+
 export default function ScheduleSection() {
   const [activeTab, setActiveTab] = useState('bracket');
+  const [dbMatches, setDbMatches] = useState<DBMatch[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Верхняя сетка по раундам
-  const upperBracketRounds = [
-    // Round 1 (8 команд -> 4 матча)
-    [
-      { id: 8, team1: 'Theartofwar "Talent" - Jab', team2: 'Phyah "LebronJames" - Ze', score1: 2, score2: 0, winner: 1 as const },
-      { id: 4, team1: 'GoW_T "Kungfu" - Zeal', team2: 'Scorchie "Zaldarius" - Zeal', score1: 2, score2: 1, winner: 1 as const },
-      { id: 5, team1: 'Blowjay "Blowski" - Conc', team2: 'Leh "Marvel" - Jab', score1: 2, score2: 0, winner: 1 as const },
-      { id: 2, team1: 'Max_edt "Koo-teha" - Conc', team2: 'Dougfluie "Kurupt" - Zeal', score1: 2, score2: 1, winner: 1 as const },
-    ],
-    // Round 2 (4 команды -> 2 матча)
-    [
-      { id: 12, team1: 'Slownoma "Joint" - Zeal', team2: 'Winner of 8' },
-      { id: 13, team1: 'Winner of 5', team2: 'Winner of 2' },
-    ],
-    // Round 3 (2 команды -> 1 матч)
-    [
-      { id: 21, team1: 'Winner of 12', team2: 'Winner of 13' },
-    ],
-    // Semifinals
-    [
-      { id: 25, team1: 'Winner of 21', team2: 'Winner of Loser 26' },
-    ],
-  ];
+  useEffect(() => {
+    loadMatches();
+  }, []);
 
-  // Нижняя сетка по раундам
-  const lowerBracketRounds = [
-    // Loser Round 1
-    [
-      { id: 15, team1: 'Loser of 2', team2: 'Loser of 3' },
-      { id: 16, team1: 'Loser of 4', team2: 'Loser of 5' },
-    ],
-    // Loser Round 2
-    [
-      { id: 17, team1: 'Loser of 13', team2: 'Loser of 1' },
-      { id: 18, team1: 'Loser of 14', team2: 'Winner of 15' },
-    ],
-    // Loser Round 3
-    [
-      { id: 20, team1: 'Loser of 12', team2: 'Winner of 18' },
-      { id: 23, team1: 'Winner of 17', team2: 'Winner of 16' },
-    ],
-    // Loser Round 4
-    [
-      { id: 24, team1: 'Loser of 21', team2: 'Winner of 23' },
-    ],
-    // Loser Round 5
-    [
-      { id: 26, team1: 'Loser of 22', team2: 'Winner of 24' },
-    ],
-    // Loser Round 6
-    [
-      { id: 27, team1: 'Winner of 26', team2: 'Loser of 28' },
-    ],
-  ];
-
-  // Гранд финал
-  const grandFinals = {
-    id: 28,
-    team1: 'Winner of 25',
-    team2: 'Winner of Loser Bracket',
+  const loadMatches = async () => {
+    try {
+      const response = await fetch(`${API_URL}?resource=matches`);
+      const data = await response.json();
+      if (data.success) {
+        setDbMatches(data.matches);
+      }
+    } catch (error) {
+      console.error('Failed to load matches:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Расписание матчей
-  const schedule: Match[] = [
-    { id: 8, team1: 'Theartofwar "Talent"', team2: 'Phyah "LebronJames"', round: 'Round 1', time: '19 октября, 14:00', status: 'finished', score1: 2, score2: 0, winner: 1 },
-    { id: 4, team1: 'GoW_T "Kungfu"', team2: 'Scorchie "Zaldarius"', round: 'Round 1', time: '19 октября, 14:30', status: 'finished', score1: 2, score2: 1, winner: 1 },
-    { id: 5, team1: 'Blowjay "Blowski"', team2: 'Leh "Marvel"', round: 'Round 1', time: '19 октября, 15:00', status: 'finished', score1: 2, score2: 0, winner: 1 },
-    { id: 2, team1: 'Max_edt "Koo-teha"', team2: 'Dougfluie "Kurupt"', round: 'Round 1', time: '19 октября, 15:30', status: 'finished', score1: 2, score2: 1, winner: 1 },
-    { id: 12, team1: 'Slownoma "Joint"', team2: 'Winner of 8', round: 'Round 2', time: '19 октября, 16:00', status: 'upcoming' },
-    { id: 13, team1: 'Winner of 5', team2: 'Winner of 2', round: 'Round 2', time: '19 октября, 16:30', status: 'upcoming' },
-  ];
+  // Преобразуем матчи из БД в формат для турнирной сетки
+  const convertToScheduleMatch = (match: DBMatch): Match => {
+    return {
+      id: match.match_number,
+      team1: match.team1_name || match.team1_placeholder || 'TBD',
+      team2: match.team2_name || match.team2_placeholder || 'TBD',
+      score1: match.score1,
+      score2: match.score2,
+      winner: match.winner as 1 | 2 | undefined,
+      status: match.status as 'upcoming' | 'live' | 'finished',
+      time: match.scheduled_time 
+        ? new Date(match.scheduled_time).toLocaleString('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : 'TBD',
+      round: `${match.bracket_type} Round ${match.round_number}`,
+    };
+  };
+
+  // Группируем матчи по типу сетки и раунду
+  const upperBracketRounds: any[][] = [];
+  const lowerBracketRounds: any[][] = [];
+  let grandFinals: any = null;
+
+  if (dbMatches.length > 0) {
+    // Находим максимальный номер раунда для каждой сетки
+    const maxUpperRound = Math.max(
+      ...dbMatches.filter(m => m.bracket_type === 'upper').map(m => m.round_number),
+      0
+    );
+    const maxLowerRound = Math.max(
+      ...dbMatches.filter(m => m.bracket_type === 'lower').map(m => m.round_number),
+      0
+    );
+
+    // Заполняем верхнюю сетку
+    for (let i = 1; i <= maxUpperRound; i++) {
+      const roundMatches = dbMatches
+        .filter(m => m.bracket_type === 'upper' && m.round_number === i)
+        .sort((a, b) => a.match_number - b.match_number)
+        .map(m => ({
+          id: m.match_number,
+          team1: m.team1_name || m.team1_placeholder || 'TBD',
+          team2: m.team2_name || m.team2_placeholder || 'TBD',
+          score1: m.score1,
+          score2: m.score2,
+          winner: m.winner,
+        }));
+      if (roundMatches.length > 0) {
+        upperBracketRounds.push(roundMatches);
+      }
+    }
+
+    // Заполняем нижнюю сетку
+    for (let i = 1; i <= maxLowerRound; i++) {
+      const roundMatches = dbMatches
+        .filter(m => m.bracket_type === 'lower' && m.round_number === i)
+        .sort((a, b) => a.match_number - b.match_number)
+        .map(m => ({
+          id: m.match_number,
+          team1: m.team1_name || m.team1_placeholder || 'TBD',
+          team2: m.team2_name || m.team2_placeholder || 'TBD',
+          score1: m.score1,
+          score2: m.score2,
+          winner: m.winner,
+        }));
+      if (roundMatches.length > 0) {
+        lowerBracketRounds.push(roundMatches);
+      }
+    }
+
+    // Гранд финал
+    const finalMatch = dbMatches.find(m => m.bracket_type === 'grand_final');
+    if (finalMatch) {
+      grandFinals = {
+        id: finalMatch.match_number,
+        team1: finalMatch.team1_name || finalMatch.team1_placeholder || 'TBD',
+        team2: finalMatch.team2_name || finalMatch.team2_placeholder || 'TBD',
+        score1: finalMatch.score1,
+        score2: finalMatch.score2,
+        winner: finalMatch.winner,
+      };
+    }
+  }
+
+  // Расписание для вкладки
+  const schedule: Match[] = dbMatches
+    .filter(m => m.scheduled_time)
+    .sort((a, b) => new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime())
+    .map(convertToScheduleMatch);
 
   const getStatusBadge = (status: Match['status']) => {
     switch (status) {
@@ -132,6 +193,46 @@ export default function ScheduleSection() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto animate-fade-in">
+        <Card className="border-primary/20">
+          <CardContent className="py-12">
+            <div className="flex flex-col items-center justify-center">
+              <Icon name="Loader2" size={48} className="animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Загрузка турнирной сетки...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (dbMatches.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto animate-fade-in">
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-3xl font-heading flex items-center gap-3">
+              <Icon name="Trophy" size={32} className="text-primary" />
+              Турнирная сетка
+            </CardTitle>
+            <CardDescription>Расписание матчей и турнирная сетка в формате Double Elimination</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <Icon name="CalendarClock" size={64} className="text-muted-foreground mx-auto mb-4" />
+              <p className="text-xl text-muted-foreground mb-2">Сетка появится после создания матчей</p>
+              <p className="text-sm text-muted-foreground">
+                Администратор настроит турнирную сетку в админ-панели
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in">
