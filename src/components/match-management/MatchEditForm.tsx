@@ -6,11 +6,10 @@ import Icon from '@/components/ui/icon';
 import { Match, Team } from './types';
 
 interface MatchEditFormProps {
-  selectedMatch: Match;
+  selectedMatch: Match | null;
   teams: Team[];
   onUpdateMatch: (match: Match) => void;
   onSubmit: (e: React.FormEvent) => void;
-  onCancel: () => void;
 }
 
 export default function MatchEditForm({
@@ -18,8 +17,18 @@ export default function MatchEditForm({
   teams,
   onUpdateMatch,
   onSubmit,
-  onCancel,
 }: MatchEditFormProps) {
+  if (!selectedMatch) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Icon name="Info" size={48} className="text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">
+          Выберите матч из списка для редактирования
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <h3 className="text-lg font-semibold">
@@ -160,9 +169,6 @@ export default function MatchEditForm({
         <Button type="submit" className="flex-1">
           <Icon name="Save" size={16} className="mr-2" />
           Сохранить
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Отмена
         </Button>
       </div>
     </form>
