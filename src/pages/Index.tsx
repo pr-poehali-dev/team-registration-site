@@ -421,7 +421,7 @@ export default function Index() {
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold mb-2">Модерация заявки</h3>
-                      <p className="text-muted-foreground">После отправки заявка поступает на проверку администратору. Срок рассмотрения — до 3 рабочих дней.</p>
+                      <p className="text-muted-foreground">После отправки заявка поступает в Telegram администраторов для проверки. Срок рассмотрения — до 3 рабочих дней.</p>
                     </div>
                   </div>
 
