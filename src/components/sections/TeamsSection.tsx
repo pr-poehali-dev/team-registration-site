@@ -3,8 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 
 interface Team {
@@ -27,8 +30,36 @@ interface TeamsSectionProps {
   onDeleteTeam: (teamId: number) => void;
 }
 
+interface EditFormData {
+  top_player: string;
+  top_telegram: string;
+  jungle_player: string;
+  jungle_telegram: string;
+  mid_player: string;
+  mid_telegram: string;
+  adc_player: string;
+  adc_telegram: string;
+  support_player: string;
+  support_telegram: string;
+}
+
 export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChange, onDeleteTeam }: TeamsSectionProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
+    top_player: '',
+    top_telegram: '',
+    jungle_player: '',
+    jungle_telegram: '',
+    mid_player: '',
+    mid_telegram: '',
+    adc_player: '',
+    adc_telegram: '',
+    support_player: '',
+    support_telegram: ''
+  });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const filteredTeams = teams.filter(team => 
     team.team_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -50,6 +81,78 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
         return line.split(' - Телеграм:')[0].trim();
       }
     });
+  };
+
+  const handleEditTeam = (team: Team) => {
+    const lines = team.members_info.split('\n');
+    const parseRole = (line: string) => {
+      const parts = line.split(' - Телеграм: ');
+      const playerName = parts[0]?.split(': ')[1]?.trim() || '';
+      const telegram = parts[1]?.trim() || '';
+      return { playerName, telegram };
+    };
+
+    const top = parseRole(lines[0] || '');
+    const jungle = parseRole(lines[1] || '');
+    const mid = parseRole(lines[2] || '');
+    const adc = parseRole(lines[3] || '');
+    const support = parseRole(lines[4] || '');
+
+    setEditFormData({
+      top_player: top.playerName,
+      top_telegram: top.telegram,
+      jungle_player: jungle.playerName,
+      jungle_telegram: jungle.telegram,
+      mid_player: mid.playerName,
+      mid_telegram: mid.telegram,
+      adc_player: adc.playerName,
+      adc_telegram: adc.telegram,
+      support_player: support.playerName,
+      support_telegram: support.telegram
+    });
+
+    setEditingTeam(team);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTeam) return;
+
+    const membersInfo = [
+      `Топ: ${editFormData.top_player} - Телеграм: ${editFormData.top_telegram}`,
+      `Лес: ${editFormData.jungle_player} - Телеграм: ${editFormData.jungle_telegram}`,
+      `Мид: ${editFormData.mid_player} - Телеграм: ${editFormData.mid_telegram}`,
+      `АДК: ${editFormData.adc_player} - Телеграм: ${editFormData.adc_telegram}`,
+      `Саппорт: ${editFormData.support_player} - Телеграм: ${editFormData.support_telegram}`
+    ].join('\n');
+
+    try {
+      const response = await fetch(`https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingTeam.id,
+          members_info: membersInfo
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Состав обновлён",
+          description: "Изменения успешно сохранены"
+        });
+        setIsEditDialogOpen(false);
+        onLoadTeams();
+      } else {
+        throw new Error('Update failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить состав команды",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleExportToExcel = () => {
@@ -158,6 +261,14 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                               </Button>
                             </>
                           )}
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditTeam(team)}
+                          >
+                            <Icon name="Edit" size={16} className="mr-1" />
+                            Изменить
+                          </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -379,6 +490,123 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
           )}
         </div>
       )}
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Редактировать состав команды</DialogTitle>
+            <DialogDescription>
+              Команда: {editingTeam?.team_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Топ</Label>
+                <Input
+                  value={editFormData.top_player}
+                  onChange={(e) => setEditFormData({...editFormData, top_player: e.target.value})}
+                  placeholder="Ник игрока"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telegram топа</Label>
+                <Input
+                  value={editFormData.top_telegram}
+                  onChange={(e) => setEditFormData({...editFormData, top_telegram: e.target.value})}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Лес</Label>
+                <Input
+                  value={editFormData.jungle_player}
+                  onChange={(e) => setEditFormData({...editFormData, jungle_player: e.target.value})}
+                  placeholder="Ник игрока"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telegram леса</Label>
+                <Input
+                  value={editFormData.jungle_telegram}
+                  onChange={(e) => setEditFormData({...editFormData, jungle_telegram: e.target.value})}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Мид</Label>
+                <Input
+                  value={editFormData.mid_player}
+                  onChange={(e) => setEditFormData({...editFormData, mid_player: e.target.value})}
+                  placeholder="Ник игрока"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telegram мида</Label>
+                <Input
+                  value={editFormData.mid_telegram}
+                  onChange={(e) => setEditFormData({...editFormData, mid_telegram: e.target.value})}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>АДК</Label>
+                <Input
+                  value={editFormData.adc_player}
+                  onChange={(e) => setEditFormData({...editFormData, adc_player: e.target.value})}
+                  placeholder="Ник игрока"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telegram АДК</Label>
+                <Input
+                  value={editFormData.adc_telegram}
+                  onChange={(e) => setEditFormData({...editFormData, adc_telegram: e.target.value})}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Саппорт</Label>
+                <Input
+                  value={editFormData.support_player}
+                  onChange={(e) => setEditFormData({...editFormData, support_player: e.target.value})}
+                  placeholder="Ник игрока"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telegram саппорта</Label>
+                <Input
+                  value={editFormData.support_telegram}
+                  onChange={(e) => setEditFormData({...editFormData, support_telegram: e.target.value})}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                Сохранить
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
