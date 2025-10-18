@@ -343,21 +343,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Импорт с Challonge
             if resource == 'import_challonge':
                 challonge_url = body_data.get('url', '')
-                api_key = os.environ.get('CHALLONGE_API_KEY')
-                
-                if not api_key:
-                    return {
-                        'statusCode': 400,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({
-                            'success': False,
-                            'message': 'API ключ Challonge не настроен. Добавьте CHALLONGE_API_KEY в секреты проекта'
-                        }),
-                        'isBase64Encoded': False
-                    }
                 
                 # Извлекаем ID турнира из URL
                 tournament_id = challonge_url.strip('/').split('/')[-1]
@@ -379,14 +364,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                # Получаем данные турнира (API key в URL параметрах)
+                # Получаем HTML страницу турнира и парсим JSON данные
                 try:
-                    url = f'https://api.challonge.com/v1/tournaments/{tournament_id}.json?api_key={api_key}'
+                    # Challonge встраивает JSON с данными турнира прямо в HTML
+                    url = f'https://challonge.com/{tournament_id}.json'
                     print(f'Запрос к Challonge: {tournament_id}')
                     req = urllib.request.Request(url)
                     with urllib.request.urlopen(req, timeout=10) as response:
                         tournament_data = json.loads(response.read().decode())
-                        print(f'Турнир получен: {tournament_data.get("tournament", {}).get("name", "unknown")}')
+                        print(f'Турнир получен: {tournament_data.get("name", "unknown")}')
                 except urllib.error.HTTPError as e:
                     error_body = e.read().decode() if hasattr(e, 'read') else str(e)
                     print(f'HTTP Error {e.code}: {error_body}')
@@ -398,7 +384,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         },
                         'body': json.dumps({
                             'success': False,
-                            'message': f'Challonge API вернул ошибку {e.code}. Проверьте: 1) Правильность URL турнира 2) API ключ 3) Турнир существует и публичный'
+                            'message': f'Не удалось найти турнир по адресу {challonge_url}. Убедитесь что турнир публичный и ссылка правильная.'
                         }),
                         'isBase64Encoded': False
                     }
@@ -412,52 +398,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         },
                         'body': json.dumps({
                             'success': False,
-                            'message': f'Ошибка подключения к Challonge: {str(e)}'
+                            'message': f'Ошибка загрузки турнира: {str(e)}'
                         }),
                         'isBase64Encoded': False
                     }
                 
-                # Получаем участников
-                try:
-                    req = urllib.request.Request(
-                        f'https://api.challonge.com/v1/tournaments/{tournament_id}/participants.json?api_key={api_key}'
-                    )
-                    with urllib.request.urlopen(req) as response:
-                        participants_data = json.loads(response.read().decode())
-                except Exception as e:
-                    return {
-                        'statusCode': 400,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({
-                            'success': False,
-                            'message': f'Не удалось получить участников: {str(e)}'
-                        }),
-                        'isBase64Encoded': False
-                    }
-                
-                # Получаем матчи
-                try:
-                    req = urllib.request.Request(
-                        f'https://api.challonge.com/v1/tournaments/{tournament_id}/matches.json?api_key={api_key}'
-                    )
-                    with urllib.request.urlopen(req) as response:
-                        matches_data = json.loads(response.read().decode())
-                except Exception as e:
-                    return {
-                        'statusCode': 400,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({
-                            'success': False,
-                            'message': f'Не удалось получить матчи: {str(e)}'
-                        }),
-                        'isBase64Encoded': False
-                    }
+                # Извлекаем участников и матчи из JSON
+                participants_data = tournament_data.get('participants', [])
+                matches_data = tournament_data.get('matches', [])
                 
                 # Очищаем существующие данные
                 with conn.cursor() as cur:
@@ -469,14 +417,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     # Создаём команды
                     for p in participants_data:
-                        participant = p['participant']
+                        participant = p.get('participant', p)
                         cur.execute("""
                             INSERT INTO t_p68536388_team_registration_si.teams 
                             (team_name, captain_name, captain_telegram, members_count, members_info, status)
                             VALUES (%s, %s, %s, %s, %s, %s)
                             RETURNING id
                         """, (
-                            participant['name'],
+                            participant.get('name', participant.get('display_name', 'Неизвестная команда')),
                             'Импорт Challonge',
                             f"seed_{participant.get('seed', 0)}",
                             5,
@@ -489,7 +437,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     # Создаём матчи
                     matches_created = 0
                     for m in matches_data:
-                        match = m['match']
+                        match = m.get('match', m)
                         
                         team1_id = participant_map.get(match.get('player1_id'))
                         team2_id = participant_map.get(match.get('player2_id'))
@@ -509,6 +457,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             elif match['winner_id'] == match.get('player2_id'):
                                 winner = 2
                         
+                        # Парсим счёт
+                        score1 = None
+                        score2 = None
+                        scores_csv = match.get('scores_csv', '')
+                        if scores_csv and '-' in scores_csv:
+                            parts = scores_csv.split('-')
+                            score1 = parts[0].strip() if len(parts) > 0 else None
+                            score2 = parts[1].strip() if len(parts) > 1 else None
+                        
                         if team1_id and team2_id:
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
@@ -516,13 +473,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                  score1, score2, winner, status)
                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """, (
-                                match['suggested_play_order'] or matches_created + 1,
+                                match.get('suggested_play_order', matches_created + 1),
                                 'upper',
                                 match.get('round', 1),
                                 team1_id,
                                 team2_id,
-                                match.get('scores_csv', '').split('-')[0] if match.get('scores_csv') else None,
-                                match.get('scores_csv', '').split('-')[1] if match.get('scores_csv') and '-' in match.get('scores_csv', '') else None,
+                                score1,
+                                score2,
                                 winner,
                                 status
                             ))
