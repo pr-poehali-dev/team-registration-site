@@ -70,19 +70,6 @@ export default function AdminLogin({ onLogin, onCancel }: AdminLoginProps) {
               </Button>
             </div>
           </form>
-          
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
-            <p className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Icon name="Info" size={16} />
-              Как зарегистрироваться?
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Для регистрации администратора используйте Telegram бота и команду:
-            </p>
-            <code className="block mt-2 p-2 bg-background rounded text-xs">
-              /adminlogin логин пароль
-            </code>
-          </div>
         </CardContent>
       </Card>
     </div>
