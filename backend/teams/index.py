@@ -381,12 +381,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 # Получаем данные турнира (API key в URL параметрах)
                 try:
-                    req = urllib.request.Request(
-                        f'https://api.challonge.com/v1/tournaments/{tournament_id}.json?api_key={api_key}'
-                    )
-                    with urllib.request.urlopen(req) as response:
+                    url = f'https://api.challonge.com/v1/tournaments/{tournament_id}.json?api_key={api_key}'
+                    print(f'Запрос к Challonge: {tournament_id}')
+                    req = urllib.request.Request(url)
+                    with urllib.request.urlopen(req, timeout=10) as response:
                         tournament_data = json.loads(response.read().decode())
-                except Exception as e:
+                        print(f'Турнир получен: {tournament_data.get("tournament", {}).get("name", "unknown")}')
+                except urllib.error.HTTPError as e:
+                    error_body = e.read().decode() if hasattr(e, 'read') else str(e)
+                    print(f'HTTP Error {e.code}: {error_body}')
                     return {
                         'statusCode': 400,
                         'headers': {
@@ -395,7 +398,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         },
                         'body': json.dumps({
                             'success': False,
-                            'message': f'Не удалось получить турнир. Проверьте URL и API ключ. Ошибка: {str(e)}'
+                            'message': f'Challonge API вернул ошибку {e.code}. Проверьте: 1) Правильность URL турнира 2) API ключ 3) Турнир существует и публичный'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                except Exception as e:
+                    print(f'Ошибка запроса: {type(e).__name__}: {str(e)}')
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Ошибка подключения к Challonge: {str(e)}'
                         }),
                         'isBase64Encoded': False
                     }
