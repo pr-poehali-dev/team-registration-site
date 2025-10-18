@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
-type Section = 'register' | 'teams' | 'schedule' | 'manage';
+type Section = 'register' | 'teams' | 'schedule' | 'manage' | 'admin';
 
 interface NavigationProps {
   activeSection: Section;
@@ -67,12 +67,12 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
             </Button>
             {isAdmin && (
               <Button 
-                variant="ghost"
-                onClick={() => window.location.href = '/setup-bot'}
+                variant={activeSection === 'admin' ? 'default' : 'ghost'}
+                onClick={() => onNavigate('admin')}
                 className="transition-all"
               >
-                <Icon name="Bot" size={18} className="mr-2" />
-                Бот
+                <Icon name="ShieldCheck" size={18} className="mr-2" />
+                Администрация
               </Button>
             )}
           </div>

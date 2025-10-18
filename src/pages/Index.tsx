@@ -6,6 +6,7 @@ import RegisterSection from '@/components/sections/RegisterSection';
 import TeamsSection from '@/components/sections/TeamsSection';
 import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
+import AdminSection from '@/components/sections/AdminSection';
 import AdminLogin from '@/components/AdminLogin';
 import funcUrls from '../../backend/func2url.json';
 
@@ -24,7 +25,7 @@ interface Team {
   created_at: string;
 }
 
-type Section = 'register' | 'teams' | 'schedule' | 'manage';
+type Section = 'register' | 'teams' | 'schedule' | 'manage' | 'admin';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState<Section>('register');
@@ -285,6 +286,10 @@ export default function Index() {
 
         {activeSection === 'manage' && (
           <ManageTeamSection />
+        )}
+
+        {activeSection === 'admin' && isAdmin && (
+          <AdminSection />
         )}
       </main>
 
