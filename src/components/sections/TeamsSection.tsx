@@ -2,7 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import { useState } from 'react';
+import * as XLSX from 'xlsx';
 
 interface Team {
   id: number;
@@ -25,18 +28,61 @@ interface TeamsSectionProps {
 }
 
 export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChange, onDeleteTeam }: TeamsSectionProps) {
-  const approvedTeams = teams.filter(team => team.status === 'approved');
-  const pendingTeams = teams.filter(team => team.status === 'pending');
-  const rejectedTeams = teams.filter(team => team.status === 'rejected');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredTeams = teams.filter(team => 
+    team.team_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    team.captain_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const approvedTeams = filteredTeams.filter(team => team.status === 'approved');
+  const pendingTeams = filteredTeams.filter(team => team.status === 'pending');
+  const rejectedTeams = filteredTeams.filter(team => team.status === 'rejected');
+
+  const handleExportToExcel = () => {
+    const exportData = filteredTeams.map(team => ({
+      'Название команды': team.team_name,
+      'Капитан': team.captain_name,
+      'Telegram': team.captain_telegram,
+      'Участников': team.members_count,
+      'Статус': team.status === 'approved' ? 'Одобрена' : team.status === 'rejected' ? 'Отклонена' : 'На модерации',
+      'Состав': team.members_info,
+      'Дата регистрации': new Date(team.created_at).toLocaleDateString('ru-RU')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Команды');
+    XLSX.writeFile(workbook, `команды_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <h2 className="text-4xl font-heading font-bold">Зарегистрированные команды</h2>
-        <Button onClick={onLoadTeams} variant="outline">
-          <Icon name="RefreshCw" size={18} className="mr-2" />
-          Обновить
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button onClick={handleExportToExcel} variant="outline">
+              <Icon name="Download" size={18} className="mr-2" />
+              Экспорт в Excel
+            </Button>
+          )}
+          <Button onClick={onLoadTeams} variant="outline">
+            <Icon name="RefreshCw" size={18} className="mr-2" />
+            Обновить
+          </Button>
+        </div>
+      </div>
+
+      <div className="relative">
+        <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Поиск по названию команды или капитану..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
       {isAdmin && (
@@ -49,7 +95,7 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
           </TabsList>
 
           <TabsContent value="all" className="space-y-4 mt-6">
-            {teams.length === 0 ? (
+            {filteredTeams.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Icon name="Inbox" size={48} className="text-muted-foreground mb-4" />
@@ -57,7 +103,7 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                 </CardContent>
               </Card>
             ) : (
-              teams.map((team) => (
+              filteredTeams.map((team) => (
                 <Card key={team.id} className="border-primary/20">
                   <CardHeader>
                     <div className="flex items-start justify-between">
