@@ -3,6 +3,7 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
+import urllib.request
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -215,6 +216,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """, (team_name, captain_name, captain_telegram, members_info, team_id))
                 conn.commit()
             
+            send_telegram_notification(conn, team_id, 'updated')
+            
             return {
                 'statusCode': 200,
                 'headers': {
@@ -229,6 +232,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Удалить команду
             params = event.get('queryStringParameters', {})
             team_id = params.get('id')
+            
+            send_telegram_notification(conn, team_id, 'deleted')
             
             with conn.cursor() as cur:
                 cur.execute("""
@@ -259,3 +264,81 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     finally:
         conn.close()
+
+def send_telegram_notification(conn, team_id: int, action: str):
+    try:
+        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            return
+        
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT team_name, captain_name, captain_telegram, members_info
+                FROM t_p68536388_team_registration_si.teams 
+                WHERE id = %s
+            """, (team_id,))
+            team = cur.fetchone()
+        
+        if not team or not team['captain_telegram']:
+            return
+        
+        telegram = team['captain_telegram']
+        if not telegram.startswith('@'):
+            return
+        
+        username = telegram[1:]
+        
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT chat_id FROM t_p68536388_team_registration_si.telegram_users 
+                WHERE username = %s
+            """, (username,))
+            user = cur.fetchone()
+        
+        if not user:
+            return
+        
+        chat_id = user['chat_id']
+        
+        if action == 'updated':
+            message = (
+                f"⚠️ <b>Ваша команда была изменена администратором</b>\n\n"
+                f"🏆 Команда: {team['team_name']}\n"
+                f"👤 Капитан: {team['captain_name']}\n\n"
+                f"📋 Новый состав:\n{team['members_info']}\n\n"
+                f"Используйте /myteam для просмотра деталей"
+            )
+        elif action == 'deleted':
+            message = (
+                f"❌ <b>Ваша команда была удалена администратором</b>\n\n"
+                f"🏆 Команда: {team['team_name']}\n"
+                f"👤 Капитан: {team['captain_name']}\n\n"
+                f"Вы можете зарегистрироваться снова используя /register"
+            )
+        else:
+            return
+        
+        send_message(bot_token, chat_id, message)
+    except Exception as e:
+        print(f"Failed to send notification: {str(e)}")
+
+def send_message(bot_token: str, chat_id: int, text: str):
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    data = {
+        'chat_id': chat_id,
+        'text': text,
+        'parse_mode': 'HTML'
+    }
+    
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode('utf-8'),
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except Exception as e:
+        print(f"Failed to send message: {str(e)}")
+        return None

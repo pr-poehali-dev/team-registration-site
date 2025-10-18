@@ -52,6 +52,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         message = update['message']
         chat_id = message['chat']['id']
         text = message.get('text', '')
+        telegram_username = message['from'].get('username', '')
+        first_name = message['from'].get('first_name', '')
+        last_name = message['from'].get('last_name', '')
+        
+        if telegram_username and db_url:
+            conn = psycopg2.connect(db_url)
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO t_p68536388_team_registration_si.telegram_users 
+                        (username, chat_id, first_name, last_name, updated_at)
+                        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (username) 
+                        DO UPDATE SET 
+                            chat_id = EXCLUDED.chat_id,
+                            first_name = EXCLUDED.first_name,
+                            last_name = EXCLUDED.last_name,
+                            updated_at = CURRENT_TIMESTAMP
+                    """, (telegram_username, chat_id, first_name, last_name))
+                    conn.commit()
+            finally:
+                conn.close()
         
         if text.startswith('/start'):
             send_message(bot_token, chat_id, 
