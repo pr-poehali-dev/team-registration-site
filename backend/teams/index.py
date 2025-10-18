@@ -183,16 +183,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     import math
                     
-                    # Находим ближайшую степень двойки (для второго раунда)
+                    # Находим ближайшую степень двойки
                     next_power_of_2 = 2 ** math.ceil(math.log2(team_count))
                     
-                    # Команды с баем = сколько команд сразу во 2 раунд
-                    teams_with_bye = next_power_of_2 - (team_count - next_power_of_2)
-                    if teams_with_bye < 0:
-                        teams_with_bye = 0
+                    # Сколько команд нужно во втором раунде (степень 2)
+                    # Команды с баем = разница между степенью 2 и количеством команд
+                    teams_with_bye = next_power_of_2 * 2 - team_count
                     
-                    # Команды в первом раунде
+                    # Команды в первом раунде (должно быть чётное число)
                     teams_in_round1 = team_count - teams_with_bye
+                    if teams_in_round1 < 0:
+                        teams_in_round1 = 0
                     first_round_matches = teams_in_round1 // 2
                     
                     rounds_needed = math.ceil(math.log2(team_count))
