@@ -273,7 +273,7 @@ export default function Index() {
                       id="members_info"
                       value={formData.members_info}
                       onChange={(e) => setFormData({...formData, members_info: e.target.value})}
-                      placeholder="Укажите ФИО участников команды..."
+                      placeholder="Укажите ФИО всех участников команды (5-7 человек), каждый с новой строки"
                       rows={6}
                       className="border-primary/20 focus:border-primary"
                     />
