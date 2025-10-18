@@ -31,26 +31,51 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if method == 'GET':
-            # Получить список всех команд
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    SELECT id, team_name, captain_name, captain_telegram, 
-                           members_count, members_info, status, admin_comment, 
-                           created_at::text
-                    FROM t_p68536388_team_registration_si.teams 
-                    ORDER BY created_at DESC
-                """)
-                teams = cur.fetchall()
+            params = event.get('queryStringParameters', {})
+            captain_telegram = params.get('captain_telegram')
             
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'teams': teams}),
-                'isBase64Encoded': False
-            }
+            if captain_telegram:
+                # Найти команду по Telegram капитана
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT id, team_name, captain_name, captain_telegram, 
+                               members_count, members_info, status, admin_comment, 
+                               created_at::text
+                        FROM t_p68536388_team_registration_si.teams 
+                        WHERE captain_telegram = %s
+                    """, (captain_telegram,))
+                    team = cur.fetchone()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'team': team}),
+                    'isBase64Encoded': False
+                }
+            else:
+                # Получить список всех команд
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT id, team_name, captain_name, captain_telegram, 
+                               members_count, members_info, status, admin_comment, 
+                               created_at::text
+                        FROM t_p68536388_team_registration_si.teams 
+                        ORDER BY created_at DESC
+                    """)
+                    teams = cur.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'teams': teams}),
+                    'isBase64Encoded': False
+                }
         
         elif method == 'POST':
             # Создать новую заявку

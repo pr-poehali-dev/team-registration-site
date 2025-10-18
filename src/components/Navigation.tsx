@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
-type Section = 'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule';
+type Section = 'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule' | 'manage';
 
 interface NavigationProps {
   activeSection: Section;
@@ -80,6 +80,14 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
             >
               <Icon name="Calendar" size={18} className="mr-2" />
               Сетка
+            </Button>
+            <Button 
+              variant={activeSection === 'manage' ? 'default' : 'ghost'} 
+              onClick={() => onNavigate('manage')}
+              className="transition-all"
+            >
+              <Icon name="Settings" size={18} className="mr-2" />
+              Моя команда
             </Button>
           </div>
           <Button
