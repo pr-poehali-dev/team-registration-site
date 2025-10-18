@@ -247,17 +247,17 @@ export default function ManageTeamSection() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-heading font-bold">Управление командой</h1>
-        <p className="text-muted-foreground">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+      <div className="text-center space-y-2 sm:space-y-4 px-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">Управление командой</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Найдите свою команду по Telegram капитана, чтобы редактировать или отменить регистрацию
         </p>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-6">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-blue-500/20 rounded-lg">
+      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start gap-4">
+          <div className="p-3 bg-blue-500/20 rounded-lg hidden sm:block">
             <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>

@@ -275,7 +275,7 @@ export default function Index() {
         onLogout={handleLogout}
       />
 
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-2 sm:px-4 py-6 sm:py-12">
         {activeSection === 'register' && (
           <RegisterSection 
             formData={formData}
