@@ -205,30 +205,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     first_round_matches = (team_count + 1) // 2
                     
+                    previous_round_start = 1
                     for r in range(2, rounds_needed + 1):
                         num_matches = max(1, first_round_matches // (2 ** (r - 1)))
-                        for _ in range(num_matches):
+                        for m in range(num_matches):
+                            source_match_1 = previous_round_start + (m * 2)
+                            source_match_2 = previous_round_start + (m * 2) + 1
+                            
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', r, '', '', 'upcoming'))
+                            """, (match_num, 'upper', r, f'Победитель #{source_match_1}', f'Победитель #{source_match_2}', 'upcoming'))
                             match_num += 1
                             matches_created += 1
+                        previous_round_start = match_num - num_matches
                     
                     lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    lower_start = match_num
                     for r in range(1, lower_rounds + 1):
                         if r % 2 == 1:
                             num_matches = max(1, first_round_matches // (2 ** ((r + 1) // 2)))
                         else:
                             num_matches = max(1, first_round_matches // (2 ** (r // 2 + 1)))
                         
-                        for _ in range(num_matches):
+                        for m in range(num_matches):
+                            if r == 1:
+                                placeholder = f'TBD (Раунд {r})'
+                            else:
+                                placeholder = f'TBD (Lower {r})'
+                            
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'lower', r, '', '', 'upcoming'))
+                            """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
                             match_num += 1
                             matches_created += 1
                     
@@ -236,7 +247,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         INSERT INTO t_p68536388_team_registration_si.matches 
                         (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                         VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (match_num, 'grand_final', 1, '', '', 'upcoming'))
+                    """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
                     matches_created += 1
                     
                     conn.commit()
@@ -361,30 +372,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     first_round_matches = (team_count + 1) // 2
                     
+                    previous_round_start = 1
                     for r in range(2, rounds_needed + 1):
                         num_matches = max(1, first_round_matches // (2 ** (r - 1)))
-                        for _ in range(num_matches):
+                        for m in range(num_matches):
+                            source_match_1 = previous_round_start + (m * 2)
+                            source_match_2 = previous_round_start + (m * 2) + 1
+                            
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', r, '', '', 'upcoming'))
+                            """, (match_num, 'upper', r, f'Победитель #{source_match_1}', f'Победитель #{source_match_2}', 'upcoming'))
                             match_num += 1
                             matches_created += 1
+                        previous_round_start = match_num - num_matches
                     
                     lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    lower_start = match_num
                     for r in range(1, lower_rounds + 1):
                         if r % 2 == 1:
                             num_matches = max(1, first_round_matches // (2 ** ((r + 1) // 2)))
                         else:
                             num_matches = max(1, first_round_matches // (2 ** (r // 2 + 1)))
                         
-                        for _ in range(num_matches):
+                        for m in range(num_matches):
+                            if r == 1:
+                                placeholder = f'TBD (Раунд {r})'
+                            else:
+                                placeholder = f'TBD (Lower {r})'
+                            
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'lower', r, '', '', 'upcoming'))
+                            """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
                             match_num += 1
                             matches_created += 1
                     
@@ -392,7 +414,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         INSERT INTO t_p68536388_team_registration_si.matches 
                         (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                         VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (match_num, 'grand_final', 1, '', '', 'upcoming'))
+                    """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
                     matches_created += 1
                     
                     conn.commit()
