@@ -98,26 +98,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
         
         elif text.startswith('/adminlogin'):
-            parts = text.split(maxsplit=2)
-            if len(parts) != 3:
+            telegram_username = message['from'].get('username', '')
+            
+            if telegram_username != 'Rywrxuna':
                 send_message(bot_token, chat_id,
-                    "📝 <b>Регистрация администратора</b>\n\n"
-                    "Используйте формат:\n"
-                    "<code>/adminlogin логин пароль</code>\n\n"
-                    "Пример:\n"
-                    "<code>/adminlogin admin mypassword123</code>"
+                    "❌ <b>Доступ запрещён</b>\n\n"
+                    "Только суперадминистратор @Rywrxuna может регистрировать новых администраторов.\n\n"
+                    "Если вам нужен доступ к админ-панели, обратитесь к @Rywrxuna."
                 )
             else:
-                username = parts[1]
-                password = parts[2]
-                telegram_username = message['from'].get('username', '')
-                
-                if not telegram_username:
+                parts = text.split(maxsplit=2)
+                if len(parts) != 3:
                     send_message(bot_token, chat_id,
-                        "❌ У вас не установлен username в Telegram.\n"
-                        "Пожалуйста, установите username в настройках Telegram."
+                        "📝 <b>Регистрация администратора</b>\n\n"
+                        "Используйте формат:\n"
+                        "<code>/adminlogin логин пароль</code>\n\n"
+                        "Пример:\n"
+                        "<code>/adminlogin admin mypassword123</code>"
                     )
                 else:
+                    username = parts[1]
+                    password = parts[2]
+                    
                     conn = psycopg2.connect(db_url)
                     try:
                         import hashlib
@@ -141,7 +143,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             "✅ <b>Администратор зарегистрирован!</b>\n\n"
                             f"Логин: <code>{username}</code>\n"
                             f"Telegram: @{telegram_username}\n\n"
-                            "Теперь вы можете входить в админ-панель на сайте."
+                            "Теперь можно входить в админ-панель на сайте."
                         )
                     except Exception as e:
                         send_message(bot_token, chat_id,
