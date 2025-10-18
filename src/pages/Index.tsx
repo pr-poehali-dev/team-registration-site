@@ -22,7 +22,7 @@ interface Team {
 }
 
 export default function Index() {
-  const [activeSection, setActiveSection] = useState<'home' | 'register' | 'teams' | 'rules' | 'contacts'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule'>('home');
   const [isAdmin, setIsAdmin] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const { toast } = useToast();
@@ -122,6 +122,14 @@ export default function Index() {
               >
                 <Icon name="Mail" size={18} className="mr-2" />
                 Контакты
+              </Button>
+              <Button 
+                variant={activeSection === 'schedule' ? 'default' : 'ghost'} 
+                onClick={() => setActiveSection('schedule')}
+                className="transition-all"
+              >
+                <Icon name="Calendar" size={18} className="mr-2" />
+                Сетка
               </Button>
             </div>
             <Button
@@ -445,6 +453,27 @@ export default function Index() {
                       При возникновении вопросов обращайтесь в раздел <button onClick={() => setActiveSection('contacts')} className="text-primary underline hover:no-underline">Контакты</button>
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeSection === 'schedule' && (
+          <div className="max-w-6xl mx-auto animate-fade-in">
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-3xl font-heading flex items-center gap-3">
+                  <Icon name="Calendar" size={32} className="text-primary" />
+                  Сетка мероприятия
+                </CardTitle>
+                <CardDescription>Расписание игр и турнирная таблица</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Icon name="CalendarClock" size={64} className="text-muted-foreground mx-auto mb-4" />
+                  <p className="text-xl text-muted-foreground mb-2">Сетка появится после завершения регистрации</p>
+                  <p className="text-sm text-muted-foreground">Здесь будет отображаться расписание игр и результаты</p>
                 </div>
               </CardContent>
             </Card>
