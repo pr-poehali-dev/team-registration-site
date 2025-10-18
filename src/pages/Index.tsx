@@ -240,11 +240,12 @@ export default function Index() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="members_count">Количество участников *</Label>
+                      <Label htmlFor="members_count">Количество участников (5-7) *</Label>
                       <Input
                         id="members_count"
                         type="number"
-                        min="1"
+                        min="5"
+                        max="7"
                         value={formData.members_count}
                         onChange={(e) => setFormData({...formData, members_count: e.target.value})}
                         placeholder="5"
@@ -432,7 +433,7 @@ export default function Index() {
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold mb-2">Требования к команде</h3>
-                      <p className="text-muted-foreground">Минимальное количество участников — 1 человек. Максимальное — не ограничено.</p>
+                      <p className="text-muted-foreground">Количество участников в команде: от 5 до 7 человек.</p>
                     </div>
                   </div>
                 </div>
