@@ -100,25 +100,30 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
             className="relative" 
             style={{ 
               width: '48px',
-              height: `${round.length * matchHeight + (round.length - 1) * spacing}px`,
               marginTop: `${topOffset}px`
             }}
           >
             {round.map((_, idx) => {
               if (idx % 2 === 0 && idx < round.length - 1) {
-                const matchSpacing = matchHeight + spacing;
-                const startY = idx * matchSpacing + matchHeight / 2;
-                const endY = (idx + 1) * matchSpacing + matchHeight / 2;
-                const midY = (startY + endY) / 2;
+                // Позиция центра первого матча пары
+                const firstMatchCenter = idx * (matchHeight + spacing) + matchHeight / 2;
+                // Позиция центра второго матча пары
+                const secondMatchCenter = (idx + 1) * (matchHeight + spacing) + matchHeight / 2;
+                // Точка выхода - ровно посередине между двумя матчами
+                const connectionPoint = (firstMatchCenter + secondMatchCenter) / 2;
 
                 return (
                   <svg
                     key={idx}
-                    className="absolute left-0 w-full h-full pointer-events-none"
-                    style={{ top: 0 }}
+                    className="absolute left-0 pointer-events-none"
+                    style={{ 
+                      top: `${firstMatchCenter}px`,
+                      width: '48px',
+                      height: `${secondMatchCenter - firstMatchCenter}px`
+                    }}
                   >
                     <path
-                      d={`M 0 ${startY} L 16 ${startY} L 16 ${midY} M 16 ${midY} L 48 ${midY} M 0 ${endY} L 16 ${endY} L 16 ${midY}`}
+                      d={`M 0 0 L 16 0 L 16 ${(secondMatchCenter - firstMatchCenter) / 2} M 16 ${(secondMatchCenter - firstMatchCenter) / 2} L 48 ${(secondMatchCenter - firstMatchCenter) / 2} M 0 ${secondMatchCenter - firstMatchCenter} L 16 ${secondMatchCenter - firstMatchCenter} L 16 ${(secondMatchCenter - firstMatchCenter) / 2}`}
                       fill="none"
                       stroke="hsl(var(--border))"
                       strokeWidth="2"
