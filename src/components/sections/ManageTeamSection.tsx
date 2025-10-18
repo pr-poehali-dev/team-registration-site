@@ -5,6 +5,7 @@ import TeamSearchCard from '@/components/manage-team/TeamSearchCard';
 import TeamDetailsCard from '@/components/manage-team/TeamDetailsCard';
 import EditTeamDialog from '@/components/manage-team/EditTeamDialog';
 import RegistrationClosedAlert from '@/components/manage-team/RegistrationClosedAlert';
+import ConfirmDialog from '@/components/manage-team/ConfirmDialog';
 
 const API_URL = funcUrls.teams;
 const SETTINGS_URL = funcUrls['registration-settings'];
@@ -43,6 +44,7 @@ export default function ManageTeamSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     team_name: '',
     captain_name: '',
@@ -185,12 +187,10 @@ export default function ManageTeamSection() {
 
       if (response.ok) {
         toast({
-          title: "Команда обновлена",
-          description: "Изменения успешно сохранены"
+          title: "Запрос отправлен",
+          description: "Проверьте Telegram бота для подтверждения изменений команды"
         });
         setIsEditDialogOpen(false);
-        setCaptainTelegram(editFormData.captain_telegram);
-        handleFindTeam();
       } else {
         throw new Error('Update failed');
       }
@@ -203,7 +203,7 @@ export default function ManageTeamSection() {
     }
   };
 
-  const handleCancelRegistration = async () => {
+  const handleCancelRegistration = () => {
     if (!team) return;
 
     if (!isRegistrationOpen) {
@@ -215,9 +215,11 @@ export default function ManageTeamSection() {
       return;
     }
 
-    if (!confirm('Вы уверены, что хотите отменить регистрацию команды? Это действие нельзя отменить.')) {
-      return;
-    }
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmCancelRegistration = async () => {
+    if (!team) return;
 
     try {
       const response = await fetch(`${API_URL}?id=${team.id}`, {
@@ -225,19 +227,19 @@ export default function ManageTeamSection() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         toast({
-          title: "Регистрация отменена",
-          description: "Ваша команда удалена из системы"
+          title: "Запрос отправлен",
+          description: "Проверьте Telegram бота для подтверждения удаления команды"
         });
-        setTeam(null);
-        setCaptainTelegram('');
+        setIsDeleteConfirmOpen(false);
       } else {
         throw new Error('Delete failed');
       }
     } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось отменить регистрацию",
+        description: "Не удалось отправить запрос на удаление",
         variant: "destructive"
       });
     }
@@ -276,6 +278,17 @@ export default function ManageTeamSection() {
         formData={editFormData}
         onFormDataChange={setEditFormData}
         onSave={handleSaveEdit}
+      />
+
+      <ConfirmDialog
+        open={isDeleteConfirmOpen}
+        onOpenChange={setIsDeleteConfirmOpen}
+        title="Отменить регистрацию команды?"
+        description="Вам будет отправлено сообщение в Telegram с кнопками подтверждения. Только после подтверждения команда будет удалена из системы."
+        onConfirm={confirmCancelRegistration}
+        confirmText="Продолжить"
+        cancelText="Отмена"
+        variant="destructive"
       />
     </div>
   );
