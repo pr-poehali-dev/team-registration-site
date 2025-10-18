@@ -209,8 +209,6 @@ export default function RegisterSection({ formData, onFormChange, onSubmit }: Re
                 </div>
               </div>
 
-              <h4 className="text-md font-semibold mt-6">Запасные игроки</h4>
-
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sub1_player">Запасной 1</Label>
