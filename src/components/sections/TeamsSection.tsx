@@ -21,9 +21,10 @@ interface TeamsSectionProps {
   isAdmin: boolean;
   onLoadTeams: () => void;
   onStatusChange: (teamId: number, newStatus: 'approved' | 'rejected') => void;
+  onDeleteTeam: (teamId: number) => void;
 }
 
-export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChange }: TeamsSectionProps) {
+export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChange, onDeleteTeam }: TeamsSectionProps) {
   const approvedTeams = teams.filter(team => team.status === 'approved');
   const pendingTeams = teams.filter(team => team.status === 'pending');
   const rejectedTeams = teams.filter(team => team.status === 'rejected');
@@ -76,23 +77,36 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                           Капитан: {team.captain_name} • Участников: {team.members_count}
                         </CardDescription>
                       </div>
-                      {isAdmin && team.status === 'pending' && (
+                      {isAdmin && (
                         <div className="flex gap-2">
+                          {team.status === 'pending' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => onStatusChange(team.id, 'approved')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Icon name="Check" size={16} className="mr-1" />
+                                Одобрить
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => onStatusChange(team.id, 'rejected')}
+                              >
+                                <Icon name="X" size={16} className="mr-1" />
+                                Отклонить
+                              </Button>
+                            </>
+                          )}
                           <Button 
                             size="sm" 
-                            onClick={() => onStatusChange(team.id, 'approved')}
-                            className="bg-green-600 hover:bg-green-700"
+                            variant="outline"
+                            onClick={() => onDeleteTeam(team.id)}
+                            className="text-destructive hover:text-destructive"
                           >
-                            <Icon name="Check" size={16} className="mr-1" />
-                            Одобрить
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => onStatusChange(team.id, 'rejected')}
-                          >
-                            <Icon name="X" size={16} className="mr-1" />
-                            Отклонить
+                            <Icon name="Trash2" size={16} className="mr-1" />
+                            Удалить
                           </Button>
                         </div>
                       )}

@@ -152,6 +152,32 @@ export default function Index() {
     }
   };
 
+  const handleDeleteTeam = async (teamId: number) => {
+    if (!confirm('Вы уверены, что хотите удалить эту команду?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}?id=${teamId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Команда удалена",
+          description: "Команда успешно удалена из системы",
+        });
+        loadTeams();
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить команду",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleTeamsClick = () => {
     setActiveSection('teams');
     loadTeams();
@@ -234,6 +260,7 @@ export default function Index() {
             isAdmin={isAdmin}
             onLoadTeams={loadTeams}
             onStatusChange={handleStatusChange}
+            onDeleteTeam={handleDeleteTeam}
           />
         )}
 
