@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
+import TeamSearchCard from '@/components/manage-team/TeamSearchCard';
+import TeamDetailsCard from '@/components/manage-team/TeamDetailsCard';
+import EditTeamDialog from '@/components/manage-team/EditTeamDialog';
+import RegistrationClosedAlert from '@/components/manage-team/RegistrationClosedAlert';
 
 const API_URL = funcUrls.teams;
 const SETTINGS_URL = funcUrls['registration-settings'];
@@ -245,11 +243,6 @@ export default function ManageTeamSection() {
     }
   };
 
-  const formatMembersInfo = (membersInfo: string): string[] => {
-    if (!membersInfo) return [];
-    return membersInfo.split('\n').filter(line => line.trim()).map(line => line.trim());
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center space-y-4">
@@ -259,251 +252,31 @@ export default function ManageTeamSection() {
         </p>
       </div>
 
-      {!isRegistrationOpen && (
-        <Card className="border-orange-500/50 bg-orange-500/10">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <Icon name="AlertCircle" size={24} className="text-orange-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-orange-500 mb-1">Регистрация завершена</h3>
-                <p className="text-sm text-muted-foreground">
-                  Период регистрации закрыт. Редактирование и отмена регистрации команд больше не доступны.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {!isRegistrationOpen && <RegistrationClosedAlert />}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Найти мою команду</CardTitle>
-          <CardDescription>Введите Telegram, который вы указали при регистрации</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                placeholder="@username"
-                value={captainTelegram}
-                onChange={(e) => setCaptainTelegram(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleFindTeam()}
-              />
-            </div>
-            <Button onClick={handleFindTeam} disabled={isLoading}>
-              <Icon name="Search" size={16} className="mr-2" />
-              {isLoading ? 'Поиск...' : 'Найти'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <TeamSearchCard
+        captainTelegram={captainTelegram}
+        isLoading={isLoading}
+        onCaptainTelegramChange={setCaptainTelegram}
+        onSearch={handleFindTeam}
+      />
 
       {team && (
-        <Card className="border-primary/20">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="font-heading">{team.team_name}</CardTitle>
-                <CardDescription>
-                  Капитан: {team.captain_name} • Статус: {
-                    team.status === 'pending' ? 'На модерации' :
-                    team.status === 'approved' ? 'Одобрена' : 'Отклонена'
-                  }
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={handleEditTeam}
-                  disabled={!isRegistrationOpen}
-                >
-                  <Icon name="Edit" size={16} className="mr-1" />
-                  Редактировать
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="destructive"
-                  onClick={handleCancelRegistration}
-                  disabled={!isRegistrationOpen}
-                >
-                  <Icon name="Trash2" size={16} className="mr-1" />
-                  Отменить регистрацию
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm mb-4">
-              <span className="text-muted-foreground">Telegram капитана:</span> {team.captain_telegram}
-            </div>
-            {team.members_info && (
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium mb-2">Состав команды:</p>
-                <div className="space-y-1">
-                  {formatMembersInfo(team.members_info).map((member, idx) => (
-                    <p key={idx} className="text-sm text-muted-foreground">{member}</p>
-                  ))}
-                </div>
-              </div>
-            )}
-            {team.admin_comment && (
-              <div className="mt-4 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                <p className="text-sm font-medium mb-1">Комментарий администратора:</p>
-                <p className="text-sm text-muted-foreground">{team.admin_comment}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <TeamDetailsCard
+          team={team}
+          isRegistrationOpen={isRegistrationOpen}
+          onEdit={handleEditTeam}
+          onCancel={handleCancelRegistration}
+        />
       )}
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Редактировать команду</DialogTitle>
-            <DialogDescription>
-              Изменение информации о команде и составе
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Название команды</Label>
-              <Input
-                value={editFormData.team_name}
-                onChange={(e) => setEditFormData({...editFormData, team_name: e.target.value})}
-                placeholder="Название команды"
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Ник капитана</Label>
-                <Input
-                  value={editFormData.captain_name}
-                  onChange={(e) => setEditFormData({...editFormData, captain_name: e.target.value})}
-                  placeholder="Ник капитана"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telegram капитана</Label>
-                <Input
-                  value={editFormData.captain_telegram}
-                  onChange={(e) => setEditFormData({...editFormData, captain_telegram: e.target.value})}
-                  placeholder="@username"
-                />
-              </div>
-            </div>
-
-            <div className="border-t pt-4 mt-4">
-              <p className="text-sm font-medium mb-4">Состав команды</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Топ</Label>
-                <Input
-                  value={editFormData.top_player}
-                  onChange={(e) => setEditFormData({...editFormData, top_player: e.target.value})}
-                  placeholder="Ник игрока"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telegram топа</Label>
-                <Input
-                  value={editFormData.top_telegram}
-                  onChange={(e) => setEditFormData({...editFormData, top_telegram: e.target.value})}
-                  placeholder="@username"
-                />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Лес</Label>
-                <Input
-                  value={editFormData.jungle_player}
-                  onChange={(e) => setEditFormData({...editFormData, jungle_player: e.target.value})}
-                  placeholder="Ник игрока"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telegram леса</Label>
-                <Input
-                  value={editFormData.jungle_telegram}
-                  onChange={(e) => setEditFormData({...editFormData, jungle_telegram: e.target.value})}
-                  placeholder="@username"
-                />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Мид</Label>
-                <Input
-                  value={editFormData.mid_player}
-                  onChange={(e) => setEditFormData({...editFormData, mid_player: e.target.value})}
-                  placeholder="Ник игрока"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telegram мида</Label>
-                <Input
-                  value={editFormData.mid_telegram}
-                  onChange={(e) => setEditFormData({...editFormData, mid_telegram: e.target.value})}
-                  placeholder="@username"
-                />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>АДК</Label>
-                <Input
-                  value={editFormData.adc_player}
-                  onChange={(e) => setEditFormData({...editFormData, adc_player: e.target.value})}
-                  placeholder="Ник игрока"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telegram АДК</Label>
-                <Input
-                  value={editFormData.adc_telegram}
-                  onChange={(e) => setEditFormData({...editFormData, adc_telegram: e.target.value})}
-                  placeholder="@username"
-                />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Саппорт</Label>
-                <Input
-                  value={editFormData.support_player}
-                  onChange={(e) => setEditFormData({...editFormData, support_player: e.target.value})}
-                  placeholder="Ник игрока"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Telegram саппорта</Label>
-                <Input
-                  value={editFormData.support_telegram}
-                  onChange={(e) => setEditFormData({...editFormData, support_telegram: e.target.value})}
-                  placeholder="@username"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Отмена
-              </Button>
-              <Button onClick={handleSaveEdit}>
-                Сохранить изменения
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EditTeamDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        formData={editFormData}
+        onFormDataChange={setEditFormData}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
