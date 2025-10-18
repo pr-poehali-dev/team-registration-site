@@ -56,7 +56,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT id, username, telegram_id, created_at, last_login, is_active 
+                    SELECT id, username, telegram_chat_id, telegram_username, created_at, last_login, is_active 
                     FROM t_p68536388_team_registration_si.admin_users 
                     ORDER BY created_at DESC
                 """)
