@@ -212,7 +212,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', r, 'TBD', 'TBD', 'upcoming'))
+                            """, (match_num, 'upper', r, '', '', 'upcoming'))
                             match_num += 1
                             matches_created += 1
                     
@@ -228,7 +228,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'lower', r, 'TBD', 'TBD', 'upcoming'))
+                            """, (match_num, 'lower', r, '', '', 'upcoming'))
                             match_num += 1
                             matches_created += 1
                     
@@ -236,7 +236,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         INSERT INTO t_p68536388_team_registration_si.matches 
                         (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                         VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (match_num, 'grand_final', 1, 'TBD', 'TBD', 'upcoming'))
+                    """, (match_num, 'grand_final', 1, '', '', 'upcoming'))
                     matches_created += 1
                     
                     conn.commit()
