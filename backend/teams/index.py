@@ -58,17 +58,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Формируем members_info из всех полей
             members_list = [
-                f"Топ: {body_data.get('top_player', '')} ({body_data.get('top_telegram', '')})",
-                f"Лес: {body_data.get('jungle_player', '')} ({body_data.get('jungle_telegram', '')})",
-                f"Мид: {body_data.get('mid_player', '')} ({body_data.get('mid_telegram', '')})",
-                f"АДК: {body_data.get('adc_player', '')} ({body_data.get('adc_telegram', '')})",
-                f"Саппорт: {body_data.get('support_player', '')} ({body_data.get('support_telegram', '')})"
+                f"Топ: {body_data.get('top_player', '')} - Телеграм: {body_data.get('top_telegram', '')}",
+                f"Лес: {body_data.get('jungle_player', '')} - Телеграм: {body_data.get('jungle_telegram', '')}",
+                f"Мид: {body_data.get('mid_player', '')} - Телеграм: {body_data.get('mid_telegram', '')}",
+                f"АДК: {body_data.get('adc_player', '')} - Телеграм: {body_data.get('adc_telegram', '')}",
+                f"Саппорт: {body_data.get('support_player', '')} - Телеграм: {body_data.get('support_telegram', '')}"
             ]
             
             if body_data.get('sub1_player'):
-                members_list.append(f"Запасной 1: {body_data.get('sub1_player', '')} ({body_data.get('sub1_telegram', '')})")
+                members_list.append(f"Запасной 1: {body_data.get('sub1_player', '')} - Телеграм: {body_data.get('sub1_telegram', '')}")
             if body_data.get('sub2_player'):
-                members_list.append(f"Запасной 2: {body_data.get('sub2_player', '')} ({body_data.get('sub2_telegram', '')})")
+                members_list.append(f"Запасной 2: {body_data.get('sub2_player', '')} - Телеграм: {body_data.get('sub2_telegram', '')}")
             
             members_info = '\n'.join(members_list)
             

@@ -60,23 +60,24 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const members = [
-      `Топ: ${formData.top_player} - Телеграм: ${formData.top_telegram}`,
-      `Лес: ${formData.jungle_player} - Телеграм: ${formData.jungle_telegram}`,
-      `Мид: ${formData.mid_player} - Телеграм: ${formData.mid_telegram}`,
-      `АДК: ${formData.adc_player} - Телеграм: ${formData.adc_telegram}`,
-      `Саппорт: ${formData.support_player} - Телеграм: ${formData.support_telegram}`
-    ];
-    
-    if (formData.sub1_player) members.push(`Запасной: ${formData.sub1_player} - Телеграм: ${formData.sub1_telegram}`);
-    if (formData.sub2_player) members.push(`Запасной: ${formData.sub2_player} - Телеграм: ${formData.sub2_telegram}`);
-    
     const submissionData = {
       team_name: formData.team_name,
       captain_name: formData.captain_name,
       captain_telegram: formData.captain_telegram,
-      members_count: formData.members_count,
-      members_info: members.join('\n')
+      top_player: formData.top_player,
+      top_telegram: formData.top_telegram,
+      jungle_player: formData.jungle_player,
+      jungle_telegram: formData.jungle_telegram,
+      mid_player: formData.mid_player,
+      mid_telegram: formData.mid_telegram,
+      adc_player: formData.adc_player,
+      adc_telegram: formData.adc_telegram,
+      support_player: formData.support_player,
+      support_telegram: formData.support_telegram,
+      sub1_player: formData.sub1_player,
+      sub1_telegram: formData.sub1_telegram,
+      sub2_player: formData.sub2_player,
+      sub2_telegram: formData.sub2_telegram
     };
     
     try {
