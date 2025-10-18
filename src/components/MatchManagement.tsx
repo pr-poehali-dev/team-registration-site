@@ -1,37 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import funcUrls from '../../backend/func2url.json';
+import { Match, Team } from './match-management/types';
+import BulkTeamCreate from './match-management/BulkTeamCreate';
+import MatchList from './match-management/MatchList';
+import MatchEditForm from './match-management/MatchEditForm';
 
 const API_URL = funcUrls.teams;
-
-interface Team {
-  id: number;
-  team_name: string;
-}
-
-interface Match {
-  id: number;
-  match_number: number;
-  bracket_type: string;
-  round_number: number;
-  team1_id?: number;
-  team2_id?: number;
-  team1_name?: string;
-  team2_name?: string;
-  team1_placeholder?: string;
-  team2_placeholder?: string;
-  score1?: number;
-  score2?: number;
-  winner?: number;
-  status: string;
-  scheduled_time?: string;
-}
 
 export default function MatchManagement() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -269,257 +247,37 @@ export default function MatchManagement() {
         </CardHeader>
         <CardContent>
           {showBulkCreate && (
-            <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Массовое создание команд</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowBulkCreate(false)}
-                  >
-                    <Icon name="X" size={16} />
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Введите названия команд (каждая команда с новой строки)
-                </p>
-                <textarea
-                  className="w-full min-h-[200px] p-3 rounded-md border bg-background font-mono text-sm"
-                  placeholder="Team Alpha&#10;Team Bravo&#10;Team Charlie&#10;Team Delta&#10;Team Echo&#10;Team Foxtrot&#10;Team Golf&#10;Team Hotel"
-                  value={bulkTeamNames}
-                  onChange={(e) => setBulkTeamNames(e.target.value)}
-                />
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    Команд для создания: {bulkTeamNames.split('\n').filter(n => n.trim().length > 0).length}
-                  </p>
-                  <Button
-                    onClick={handleBulkCreate}
-                    disabled={creatingTeams}
-                  >
-                    {creatingTeams ? (
-                      <>
-                        <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
-                        Создание...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="CheckCircle" size={16} className="mr-2" />
-                        Создать команды
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <BulkTeamCreate
+              bulkTeamNames={bulkTeamNames}
+              setBulkTeamNames={setBulkTeamNames}
+              onClose={() => setShowBulkCreate(false)}
+              onSubmit={handleBulkCreate}
+              creatingTeams={creatingTeams}
+            />
           )}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Список матчей */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Список матчей</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {matches.map((match) => (
-                  <div
-                    key={match.id}
-                    onClick={() => setSelectedMatch(match)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedMatch?.id === match.id
-                        ? 'border-primary bg-primary/5'
-                        : 'hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted-foreground">
-                        Match #{match.match_number} - {match.bracket_type} R{match.round_number}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        match.status === 'finished' ? 'bg-green-500/20 text-green-700' :
-                        match.status === 'live' ? 'bg-red-500/20 text-red-700' :
-                        'bg-gray-500/20 text-gray-700'
-                      }`}>
-                        {match.status}
-                      </span>
-                    </div>
-                    <div className="text-sm">
-                      <div>{match.team1_name || match.team1_placeholder || 'TBD'}</div>
-                      <div className="text-xs text-muted-foreground">vs</div>
-                      <div>{match.team2_name || match.team2_placeholder || 'TBD'}</div>
-                    </div>
-                    {match.score1 !== undefined && match.score2 !== undefined && (
-                      <div className="text-sm font-bold mt-1">
-                        {match.score1} - {match.score2}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {matches.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    Матчей пока нет
-                  </p>
-                )}
-              </div>
-            </div>
 
-            {/* Форма редактирования */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <MatchList
+              matches={matches}
+              selectedMatch={selectedMatch}
+              onSelectMatch={setSelectedMatch}
+            />
+
             <div>
               {selectedMatch ? (
-                <form onSubmit={handleUpdateMatch} className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    Редактировать матч #{selectedMatch.match_number}
-                  </h3>
-
-                  <div className="space-y-2">
-                    <Label>Команда 1</Label>
-                    <Select
-                      value={selectedMatch.team1_id?.toString() || ''}
-                      onValueChange={(value) =>
-                        setSelectedMatch({ ...selectedMatch, team1_id: parseInt(value) })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите команду" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id.toString()}>
-                            {team.team_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Команда 2</Label>
-                    <Select
-                      value={selectedMatch.team2_id?.toString() || ''}
-                      onValueChange={(value) =>
-                        setSelectedMatch({ ...selectedMatch, team2_id: parseInt(value) })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите команду" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id.toString()}>
-                            {team.team_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Счёт команды 1</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={selectedMatch.score1 || ''}
-                        onChange={(e) =>
-                          setSelectedMatch({
-                            ...selectedMatch,
-                            score1: parseInt(e.target.value) || undefined,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Счёт команды 2</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={selectedMatch.score2 || ''}
-                        onChange={(e) =>
-                          setSelectedMatch({
-                            ...selectedMatch,
-                            score2: parseInt(e.target.value) || undefined,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Победитель</Label>
-                    <Select
-                      value={selectedMatch.winner?.toString() || ''}
-                      onValueChange={(value) =>
-                        setSelectedMatch({
-                          ...selectedMatch,
-                          winner: value ? parseInt(value) : undefined,
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Не определён" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Команда 1</SelectItem>
-                        <SelectItem value="2">Команда 2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Статус</Label>
-                    <Select
-                      value={selectedMatch.status}
-                      onValueChange={(value) =>
-                        setSelectedMatch({ ...selectedMatch, status: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="upcoming">Ожидается</SelectItem>
-                        <SelectItem value="live">В эфире</SelectItem>
-                        <SelectItem value="finished">Завершён</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Время начала</Label>
-                    <Input
-                      type="datetime-local"
-                      value={
-                        selectedMatch.scheduled_time
-                          ? new Date(selectedMatch.scheduled_time).toISOString().slice(0, 16)
-                          : ''
-                      }
-                      onChange={(e) =>
-                        setSelectedMatch({
-                          ...selectedMatch,
-                          scheduled_time: e.target.value
-                            ? new Date(e.target.value).toISOString()
-                            : undefined,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="submit" className="flex-1">
-                      <Icon name="Save" size={18} className="mr-2" />
-                      Сохранить
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setSelectedMatch(null)}
-                    >
-                      Отмена
-                    </Button>
-                  </div>
-                </form>
+                <MatchEditForm
+                  selectedMatch={selectedMatch}
+                  teams={teams}
+                  onUpdateMatch={setSelectedMatch}
+                  onSubmit={handleUpdateMatch}
+                  onCancel={() => setSelectedMatch(null)}
+                />
               ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Icon name="MousePointerClick" size={48} className="mx-auto mb-2" />
-                  <p>Выберите матч для редактирования</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Icon name="MousePointerClick" size={48} className="text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">
+                    Выберите матч из списка для редактирования
+                  </p>
                 </div>
               )}
             </div>
