@@ -21,6 +21,8 @@ export default function MatchManagement() {
   const [bulkTeamNames, setBulkTeamNames] = useState('');
   const [creatingTeams, setCreatingTeams] = useState(false);
   const [generatingBracket, setGeneratingBracket] = useState(false);
+  const [clearingBracket, setClearingBracket] = useState(false);
+  const [shufflingTeams, setShufflingTeams] = useState(false);
   const { toast } = useToast();
 
   const loadMatches = async () => {
@@ -192,6 +194,92 @@ export default function MatchManagement() {
     }
   };
 
+  const handleClearBracket = async () => {
+    if (!confirm('Вы уверены? Это удалит все матчи из турнирной сетки.')) {
+      return;
+    }
+
+    setClearingBracket(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'clear_bracket',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'Успешно',
+          description: 'Турнирная сетка очищена',
+        });
+        loadMatches();
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось очистить сетку',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setClearingBracket(false);
+    }
+  };
+
+  const handleShuffleTeams = async () => {
+    if (!confirm('Это перемешает порядок команд и создаст новую сетку. Продолжить?')) {
+      return;
+    }
+
+    setShufflingTeams(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'shuffle_and_generate',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'Успешно',
+          description: `Команды перемешаны. Создано матчей: ${data.matches_created}`,
+        });
+        loadMatches();
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось перемешать команды',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setShufflingTeams(false);
+    }
+  };
+
   const handleUpdateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
@@ -257,7 +345,7 @@ export default function MatchManagement() {
               <Icon name="Swords" size={24} className="text-primary" />
               <CardTitle>Управление матчами</CardTitle>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 onClick={handleGenerateBracket}
                 disabled={generatingBracket}
@@ -272,12 +360,38 @@ export default function MatchManagement() {
                 Создать сетку
               </Button>
               <Button
+                onClick={handleShuffleTeams}
+                disabled={shufflingTeams}
+                variant="outline"
+                size="sm"
+              >
+                {shufflingTeams ? (
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Icon name="Shuffle" size={16} className="mr-2" />
+                )}
+                Перемешать команды
+              </Button>
+              <Button
+                onClick={handleClearBracket}
+                disabled={clearingBracket}
+                variant="outline"
+                size="sm"
+              >
+                {clearingBracket ? (
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Icon name="Trash2" size={16} className="mr-2" />
+                )}
+                Очистить сетку
+              </Button>
+              <Button
                 onClick={() => setShowBulkCreate(!showBulkCreate)}
                 variant="outline"
                 size="sm"
               >
                 <Icon name="Plus" size={16} className="mr-2" />
-                Добавить команды списком
+                Добавить команды
               </Button>
               <Button
                 onClick={handleExportTeams}
@@ -290,7 +404,7 @@ export default function MatchManagement() {
                 ) : (
                   <Icon name="Download" size={16} className="mr-2" />
                 )}
-                Экспорт команд (CSV)
+                Экспорт (CSV)
               </Button>
             </div>
           </div>
