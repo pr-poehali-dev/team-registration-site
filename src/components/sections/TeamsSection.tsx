@@ -39,13 +39,16 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
   const pendingTeams = filteredTeams.filter(team => team.status === 'pending');
   const rejectedTeams = filteredTeams.filter(team => team.status === 'rejected');
 
-  const formatMembersInfo = (membersInfo: string, showTelegram: boolean) => {
-    if (!membersInfo) return '';
-    if (showTelegram) return membersInfo;
+  const formatMembersInfo = (membersInfo: string, showTelegram: boolean): string[] => {
+    if (!membersInfo) return [];
     
     return membersInfo.split('\n').map(line => {
-      return line.replace(/ - \u0422\u0435\u043b\u0435\u0433\u0440\u0430\u043c: @?\w+/g, '');
-    }).join('\n');
+      if (showTelegram) {
+        return line;
+      } else {
+        return line.replace(/ - Телеграм: @?\w+/g, '');
+      }
+    });
   };
 
   const handleExportToExcel = () => {
@@ -174,7 +177,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                     {team.members_info && (
                       <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                         <p className="text-sm font-medium mb-2">Состав команды:</p>
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{formatMembersInfo(team.members_info, true)}</p>
+                        <div className="space-y-1">
+                          {formatMembersInfo(team.members_info, true).map((member, idx) => (
+                            <p key={idx} className="text-sm text-muted-foreground">{member}</p>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -232,7 +239,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                     {team.members_info && (
                       <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                         <p className="text-sm font-medium mb-2">Состав команды:</p>
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{formatMembersInfo(team.members_info, true)}</p>
+                        <div className="space-y-1">
+                          {formatMembersInfo(team.members_info, true).map((member, idx) => (
+                            <p key={idx} className="text-sm text-muted-foreground">{member}</p>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -312,7 +323,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                     {team.members_info && (
                       <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                         <p className="text-sm font-medium mb-2">Состав команды:</p>
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">{formatMembersInfo(team.members_info, true)}</p>
+                        <div className="space-y-1">
+                          {formatMembersInfo(team.members_info, true).map((member, idx) => (
+                            <p key={idx} className="text-sm text-muted-foreground">{member}</p>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -350,7 +365,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                   <CardContent>
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <p className="text-sm font-medium mb-2">Состав команды:</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">{formatMembersInfo(team.members_info, false)}</p>
+                      <div className="space-y-1">
+                        {formatMembersInfo(team.members_info, false).map((member, idx) => (
+                          <p key={idx} className="text-sm text-muted-foreground">{member}</p>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 )}
