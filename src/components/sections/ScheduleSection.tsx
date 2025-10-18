@@ -77,7 +77,7 @@ export default function ScheduleSection() {
             minute: '2-digit'
           })
         : 'TBD',
-      round: `${match.bracket_type} Round ${match.round_number}`,
+      round: `${match.bracket_type === 'upper' ? 'Верхняя сетка' : match.bracket_type === 'lower' ? 'Нижняя сетка' : 'Гранд Финал'} Раунд ${match.round_number}`,
     };
   };
 
