@@ -101,13 +101,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Поиск по коду регистрации
+            auth_code = params.get('auth_code')
+            
             if captain_telegram:
-                # Найти команду по Telegram капитана
+                # Найти команду по Telegram капитана (legacy)
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text
+                               created_at::text, auth_code
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE captain_telegram = %s
                     """, (captain_telegram,))
@@ -120,6 +123,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({'team': team}),
+                    'isBase64Encoded': False
+                }
+            
+            if auth_code:
+                # Найти команду по коду регистрации
+                code_clean = auth_code.strip().upper().replace('-', '')
+                
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT id, team_name, captain_name, captain_telegram, 
+                               members_count, members_info, status, admin_comment, 
+                               created_at::text, auth_code
+                        FROM t_p68536388_team_registration_si.teams 
+                        WHERE UPPER(REPLACE(auth_code, '-', '')) = %s
+                    """, (code_clean,))
+                    team = cur.fetchone()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'team': team, 'success': team is not None}),
                     'isBase64Encoded': False
                 }
             else:

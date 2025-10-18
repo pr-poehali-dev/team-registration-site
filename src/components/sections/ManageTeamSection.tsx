@@ -20,6 +20,7 @@ interface Team {
   status: 'pending' | 'approved' | 'rejected';
   admin_comment: string;
   created_at: string;
+  auth_code?: string;
 }
 
 interface EditFormData {
@@ -80,7 +81,7 @@ export default function ManageTeamSection() {
     if (!captainTelegram.trim()) {
       toast({
         title: "Ошибка",
-        description: "Введите ваш Telegram",
+        description: "Введите код регистрации",
         variant: "destructive"
       });
       return;
@@ -88,7 +89,7 @@ export default function ManageTeamSection() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}?captain_telegram=${encodeURIComponent(captainTelegram)}`);
+      const response = await fetch(`${API_URL}?auth_code=${encodeURIComponent(captainTelegram)}`);
       const data = await response.json();
       
       if (data.team) {
@@ -101,7 +102,7 @@ export default function ManageTeamSection() {
         setTeam(null);
         toast({
           title: "Команда не найдена",
-          description: "У вас нет зарегистрированной команды",
+          description: "Проверьте правильность кода регистрации",
           variant: "destructive"
         });
       }

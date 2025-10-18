@@ -12,6 +12,7 @@ interface Team {
   status: 'pending' | 'approved' | 'rejected';
   admin_comment: string;
   created_at: string;
+  auth_code?: string;
 }
 
 interface TeamDetailsCardProps {
@@ -67,8 +68,17 @@ export default function TeamDetailsCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm mb-4">
-          <span className="text-muted-foreground">Telegram капитана:</span> {team.captain_telegram}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="text-sm">
+            <span className="text-muted-foreground">Telegram капитана:</span>
+            <p className="font-medium">{team.captain_telegram}</p>
+          </div>
+          {team.auth_code && (
+            <div className="text-sm">
+              <span className="text-muted-foreground">Код регистрации:</span>
+              <p className="font-mono font-bold text-lg text-primary">{team.auth_code}</p>
+            </div>
+          )}
         </div>
         {team.members_info && (
           <div className="p-4 bg-muted/50 rounded-lg">
