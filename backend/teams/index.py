@@ -32,8 +32,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         if method == 'GET':
-            params = event.get('queryStringParameters', {})
+            params = event.get('queryStringParameters', {}) or {}
+            resource = params.get('resource')
             captain_telegram = params.get('captain_telegram')
+            
+            # Управление матчами
+            if resource == 'matches':
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT 
+                            m.id, m.match_number, m.bracket_type, m.round_number,
+                            m.team1_id, m.team2_id, m.team1_placeholder, m.team2_placeholder,
+                            m.score1, m.score2, m.winner, m.status, m.scheduled_time,
+                            t1.team_name as team1_name, t2.team_name as team2_name
+                        FROM t_p68536388_team_registration_si.matches m
+                        LEFT JOIN t_p68536388_team_registration_si.teams t1 ON m.team1_id = t1.id
+                        LEFT JOIN t_p68536388_team_registration_si.teams t2 ON m.team2_id = t2.id
+                        ORDER BY m.bracket_type, m.round_number, m.match_number
+                    """)
+                    matches = cur.fetchall()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'matches': [dict(match) for match in matches]
+                    }, default=str),
+                    'isBase64Encoded': False
+                }
             
             if captain_telegram:
                 # Найти команду по Telegram капитана
@@ -160,8 +190,53 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise
         
         elif method == 'PUT':
-            # Обновить статус команды (только для админа)
             body_data = json.loads(event.get('body', '{}'))
+            resource = body_data.get('resource')
+            
+            # Обновить матч
+            if resource == 'match':
+                match_id = body_data.get('match_id')
+                
+                if not match_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'success': False, 'message': 'match_id required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE t_p68536388_team_registration_si.matches 
+                        SET team1_id = %s, team2_id = %s, score1 = %s, score2 = %s, 
+                            winner = %s, status = %s, scheduled_time = %s, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = %s
+                    """, (
+                        body_data.get('team1_id'),
+                        body_data.get('team2_id'),
+                        body_data.get('score1'),
+                        body_data.get('score2'),
+                        body_data.get('winner'),
+                        body_data.get('status'),
+                        body_data.get('scheduled_time'),
+                        match_id
+                    ))
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': True, 'message': 'Match updated'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Обновить статус команды (только для админа)
             team_id = body_data.get('id')
             new_status = body_data.get('status')
             admin_comment = body_data.get('admin_comment', '')

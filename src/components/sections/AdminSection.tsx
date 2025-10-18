@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
 import AdminManagement from '@/components/AdminManagement';
+import MatchManagement from '@/components/MatchManagement';
 
 const SETTINGS_URL = funcUrls['registration-settings'];
 
@@ -165,6 +166,8 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
       {isSuperAdmin && (
         <AdminManagement currentUsername={adminUsername} />
       )}
+
+      <MatchManagement />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="hover:shadow-lg transition-shadow">
