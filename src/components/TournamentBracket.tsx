@@ -66,18 +66,20 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
   }) => {
     const matchHeight = 80;
     const gapBetweenMatches = 24;
-    const baseSpacing = roundIdx === 0 ? 0 : Math.pow(2, roundIdx) * (matchHeight + gapBetweenMatches) - gapBetweenMatches;
+    const spacingMultiplier = roundIdx === 0 ? 0 : Math.pow(2, roundIdx - 1) * (matchHeight + gapBetweenMatches);
+    const topOffset = roundIdx === 0 ? 0 : spacingMultiplier / 2;
 
     return (
-      <div className="flex items-center">
+      <div className="flex items-start">
         <div 
           className="flex flex-col" 
           style={{ 
             minWidth: '200px',
-            gap: `${baseSpacing}px`
+            gap: `${spacingMultiplier}px`,
+            marginTop: `${topOffset}px`
           }}
         >
-          <div className="text-center mb-2">
+          <div className="text-center mb-2 -mt-8">
             <Badge variant="outline" className="text-xs">
               {isLastRound ? 'Финал' : `Раунд ${roundIdx + 1}`}
             </Badge>
@@ -91,16 +93,18 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
 
         {!isLastRound && (
           <div 
-            className="flex flex-col justify-around px-4 relative" 
+            className="relative" 
             style={{ 
-              height: `${round.length * matchHeight + (round.length - 1) * (baseSpacing || gapBetweenMatches)}px`,
-              marginTop: '32px'
+              width: '48px',
+              height: `${round.length * matchHeight + (round.length - 1) * spacingMultiplier}px`,
+              marginTop: `${topOffset}px`
             }}
           >
             {round.map((_, idx) => {
               if (idx % 2 === 0 && idx < round.length - 1) {
-                const startY = idx * (matchHeight + (baseSpacing || gapBetweenMatches)) + matchHeight / 2;
-                const endY = (idx + 1) * (matchHeight + (baseSpacing || gapBetweenMatches)) + matchHeight / 2;
+                const matchSpacing = matchHeight + spacingMultiplier;
+                const startY = idx * matchSpacing + matchHeight / 2;
+                const endY = (idx + 1) * matchSpacing + matchHeight / 2;
                 const midY = (startY + endY) / 2;
 
                 return (
@@ -110,7 +114,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
                     style={{ top: 0 }}
                   >
                     <path
-                      d={`M 0 ${startY} L 24 ${startY} L 24 ${midY} M 24 ${midY} L 48 ${midY} M 0 ${endY} L 24 ${endY} L 24 ${midY}`}
+                      d={`M 0 ${startY} L 16 ${startY} L 16 ${midY} M 16 ${midY} L 48 ${midY} M 0 ${endY} L 16 ${endY} L 16 ${midY}`}
                       fill="none"
                       stroke="hsl(var(--border))"
                       strokeWidth="2"
