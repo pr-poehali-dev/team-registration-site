@@ -30,6 +30,8 @@ type Section = 'register' | 'teams' | 'schedule' | 'manage' | 'admin';
 export default function Index() {
   const [activeSection, setActiveSection] = useState<Section>('register');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [adminUsername, setAdminUsername] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const { toast } = useToast();
@@ -216,6 +218,8 @@ export default function Index() {
       if (data.success) {
         setIsAuthenticated(true);
         setIsAdmin(true);
+        setAdminUsername(data.username || username);
+        setIsSuperAdmin(data.is_superadmin || false);
         toast({
           title: "Успешный вход",
           description: "Добро пожаловать в админ-панель",
@@ -239,6 +243,8 @@ export default function Index() {
   const handleLogout = () => {
     setIsAdmin(false);
     setIsAuthenticated(false);
+    setIsSuperAdmin(false);
+    setAdminUsername('');
     setActiveSection('register');
     toast({
       title: "Выход выполнен",
@@ -294,7 +300,12 @@ export default function Index() {
         )}
 
         {activeSection === 'admin' && isAdmin && (
-          <AdminSection teams={teams} onNavigate={setActiveSection} />
+          <AdminSection 
+            teams={teams} 
+            onNavigate={setActiveSection}
+            isSuperAdmin={isSuperAdmin}
+            adminUsername={adminUsername}
+          />
         )}
       </main>
 

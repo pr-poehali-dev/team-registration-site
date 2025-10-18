@@ -7,9 +7,9 @@ import hashlib
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Проверка логина и пароля администратора для доступа к панели управления
+    Business: Управление администраторами - авторизация, получение списка, удаление
     Args: event с httpMethod, body с username и password; context с request_id
-    Returns: HTTP response с результатом авторизации
+    Returns: HTTP response с результатом операции
     '''
     method: str = event.get('httpMethod', 'POST')
     
@@ -18,13 +18,130 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Username',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
             'isBase64Encoded': False
         }
+    
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'success': False, 'message': 'Database not configured'}),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'GET':
+        admin_username = event.get('headers', {}).get('X-Admin-Username', '')
+        
+        if admin_username != '@Rywrxuna':
+            return {
+                'statusCode': 403,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'success': False, 'message': 'Access denied'}),
+                'isBase64Encoded': False
+            }
+        
+        conn = psycopg2.connect(db_url)
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, username, telegram_id, created_at, last_login, is_active 
+                    FROM t_p68536388_team_registration_si.admin_users 
+                    ORDER BY created_at DESC
+                """)
+                admins = cur.fetchall()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'success': True, 
+                    'admins': [dict(admin) for admin in admins]
+                }, default=str),
+                'isBase64Encoded': False
+            }
+        finally:
+            conn.close()
+    
+    if method == 'DELETE':
+        admin_username = event.get('headers', {}).get('X-Admin-Username', '')
+        
+        if admin_username != '@Rywrxuna':
+            return {
+                'statusCode': 403,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'success': False, 'message': 'Access denied'}),
+                'isBase64Encoded': False
+            }
+        
+        body_data = json.loads(event.get('body', '{}'))
+        admin_id = body_data.get('admin_id')
+        
+        if not admin_id:
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'success': False, 'message': 'admin_id required'}),
+                'isBase64Encoded': False
+            }
+        
+        conn = psycopg2.connect(db_url)
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT username FROM t_p68536388_team_registration_si.admin_users 
+                    WHERE id = %s
+                """, (admin_id,))
+                admin = cur.fetchone()
+                
+                if admin and admin['username'] == '@Rywrxuna':
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'success': False, 'message': 'Cannot delete superadmin'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute("""
+                    DELETE FROM t_p68536388_team_registration_si.admin_users 
+                    WHERE id = %s
+                """, (admin_id,))
+                conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'success': True, 'message': 'Admin deleted'}),
+                'isBase64Encoded': False
+            }
+        finally:
+            conn.close()
     
     if method == 'POST':
         body_data = json.loads(event.get('body', '{}'))
@@ -39,18 +156,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Access-Control-Allow-Origin': '*'
                 },
                 'body': json.dumps({'success': False, 'message': 'Username and password required'}),
-                'isBase64Encoded': False
-            }
-        
-        db_url = os.environ.get('DATABASE_URL')
-        if not db_url:
-            return {
-                'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'success': False, 'message': 'Database not configured'}),
                 'isBase64Encoded': False
             }
         
@@ -75,13 +180,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     """, (admin['id'],))
                     conn.commit()
                 
+                is_superadmin = admin['username'] == '@Rywrxuna'
+                
                 return {
                     'statusCode': 200,
                     'headers': {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*'
                     },
-                    'body': json.dumps({'success': True, 'message': 'Authorization successful'}),
+                    'body': json.dumps({
+                        'success': True, 
+                        'message': 'Authorization successful',
+                        'username': admin['username'],
+                        'is_superadmin': is_superadmin
+                    }),
                     'isBase64Encoded': False
                 }
             else:

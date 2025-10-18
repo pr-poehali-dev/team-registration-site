@@ -5,15 +5,18 @@ import Icon from '@/components/ui/icon';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
+import AdminManagement from '@/components/AdminManagement';
 
 const SETTINGS_URL = funcUrls['registration-settings'];
 
 interface AdminSectionProps {
   teams: { status: string }[];
   onNavigate?: (section: 'teams') => void;
+  isSuperAdmin?: boolean;
+  adminUsername?: string;
 }
 
-export default function AdminSection({ teams, onNavigate }: AdminSectionProps) {
+export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, adminUsername = '' }: AdminSectionProps) {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const { toast } = useToast();
@@ -158,6 +161,10 @@ export default function AdminSection({ teams, onNavigate }: AdminSectionProps) {
           </div>
         </CardContent>
       </Card>
+
+      {isSuperAdmin && (
+        <AdminManagement currentUsername={adminUsername} />
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="hover:shadow-lg transition-shadow">
