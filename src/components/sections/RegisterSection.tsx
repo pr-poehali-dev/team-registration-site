@@ -44,43 +44,28 @@ export default function RegisterSection({ formData, onFormChange, onSubmit }: Re
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="captain_name">ФИО капитана *</Label>
+                <Label htmlFor="captain_name">Ник капитана *</Label>
                 <Input
                   id="captain_name"
                   value={formData.captain_name}
                   onChange={(e) => onFormChange({...formData, captain_name: e.target.value})}
-                  placeholder="Иванов Иван Иванович"
+                  placeholder="IvanGamer"
                   required
                   className="border-primary/20 focus:border-primary"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="members_count">Количество участников (5-7) *</Label>
+                <Label htmlFor="captain_telegram">Telegram капитана *</Label>
                 <Input
-                  id="members_count"
-                  type="number"
-                  min="5"
-                  max="7"
-                  value={formData.members_count}
-                  onChange={(e) => onFormChange({...formData, members_count: e.target.value})}
-                  placeholder="5"
+                  id="captain_telegram"
+                  value={formData.captain_telegram}
+                  onChange={(e) => onFormChange({...formData, captain_telegram: e.target.value})}
+                  placeholder="@username"
                   required
                   className="border-primary/20 focus:border-primary"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="captain_telegram">Telegram капитана *</Label>
-              <Input
-                id="captain_telegram"
-                value={formData.captain_telegram}
-                onChange={(e) => onFormChange({...formData, captain_telegram: e.target.value})}
-                placeholder="@username"
-                required
-                className="border-primary/20 focus:border-primary"
-              />
             </div>
 
             <div className="space-y-2">

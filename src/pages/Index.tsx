@@ -39,7 +39,7 @@ export default function Index() {
     team_name: '',
     captain_name: '',
     captain_telegram: '',
-    members_count: '',
+    members_count: '5',
     members_info: ''
   });
 
@@ -63,7 +63,7 @@ export default function Index() {
           team_name: '',
           captain_name: '',
           captain_telegram: '',
-          members_count: '',
+          members_count: '5',
           members_info: ''
         });
       } else {
