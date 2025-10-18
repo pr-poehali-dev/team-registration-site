@@ -60,11 +60,30 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const members = [
+      `Топ: ${formData.top_player}`,
+      `Лес: ${formData.jungle_player}`,
+      `Мид: ${formData.mid_player}`,
+      `АДК: ${formData.adc_player}`,
+      `Саппорт: ${formData.support_player}`
+    ];
+    
+    if (formData.sub1_player) members.push(`Запасной: ${formData.sub1_player}`);
+    if (formData.sub2_player) members.push(`Запасной: ${formData.sub2_player}`);
+    
+    const submissionData = {
+      team_name: formData.team_name,
+      captain_name: formData.captain_name,
+      captain_telegram: formData.captain_telegram,
+      members_count: formData.members_count,
+      members_info: members.join('\n')
+    };
+    
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submissionData)
       });
       
       if (response.ok) {
