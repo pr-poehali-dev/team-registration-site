@@ -30,7 +30,7 @@ export default function BotSetup() {
   const setupBot = async () => {
     setLoading(true);
     try {
-      const response = await fetch(SETUP_URL);
+      const response = await fetch(`${SETUP_URL}?action=start`);
       const data = await response.json();
       setBotInfo(data);
       
@@ -43,6 +43,36 @@ export default function BotSetup() {
         toast({
           title: "Ошибка",
           description: data.error || "Не удалось настроить бота",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось подключиться к серверу",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stopBot = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${SETUP_URL}?action=stop`);
+      const data = await response.json();
+      setBotInfo(data);
+      
+      if (data.success) {
+        toast({
+          title: "Бот остановлен!",
+          description: "Telegram бот больше не принимает команды",
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: data.error || "Не удалось остановить бота",
           variant: "destructive"
         });
       }
@@ -83,23 +113,43 @@ export default function BotSetup() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <Button
-              onClick={setupBot}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 text-lg"
-            >
-              {loading ? (
-                <>
-                  <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
-                  Настройка...
-                </>
-              ) : (
-                <>
-                  <Icon name="Play" className="mr-2 h-5 w-5" />
-                  Запустить бота
-                </>
-              )}
-            </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={setupBot}
+                disabled={loading}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-6 text-lg"
+              >
+                {loading ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
+                    Настройка...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Play" className="mr-2 h-5 w-5" />
+                    Запустить
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={stopBot}
+                disabled={loading}
+                className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold py-6 text-lg"
+              >
+                {loading ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
+                    Остановка...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Square" className="mr-2 h-5 w-5" />
+                    Остановить
+                  </>
+                )}
+              </Button>
+            </div>
 
             {botInfo && (
               <div className="mt-6">

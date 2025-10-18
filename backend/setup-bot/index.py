@@ -5,9 +5,9 @@ from typing import Dict, Any
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Автоматическая настройка webhook для Telegram бота
-    Args: event с queryStringParameters; context с request_id
-    Returns: Результат настройки webhook
+    Business: Автоматическая настройка и остановка webhook для Telegram бота
+    Args: event с queryStringParameters (action=start|stop); context с request_id
+    Returns: Результат настройки или остановки webhook
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -40,9 +40,46 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    params = event.get('queryStringParameters', {})
+    action = params.get('action', 'start')
+    
     webhook_url = 'https://functions.poehali.dev/efa0cbb2-68dd-40bd-8794-6060b8390af2'
     
     try:
+        if action == 'stop':
+            api_url = f'https://api.telegram.org/bot{bot_token}/deleteWebhook'
+            
+            with urllib.request.urlopen(api_url) as response:
+                result = json.loads(response.read().decode('utf-8'))
+            
+            if result.get('ok'):
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'message': 'Бот остановлен',
+                        'action': 'stopped'
+                    }, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+            else:
+                return {
+                    'statusCode': 500,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Ошибка остановки бота',
+                        'details': result
+                    }, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+        
         api_url = f'https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}'
         
         with urllib.request.urlopen(api_url) as response:
