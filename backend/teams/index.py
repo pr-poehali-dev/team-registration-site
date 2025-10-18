@@ -145,9 +145,66 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
         
         elif method == 'POST':
-            # Создать новую заявку
             body_data = json.loads(event.get('body', '{}'))
+            resource = body_data.get('resource')
             
+            # Массовое создание команд
+            if resource == 'bulk_create':
+                team_names = body_data.get('team_names', [])
+                
+                if not team_names:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': 'Список названий команд пуст'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                created_count = 0
+                with conn.cursor() as cur:
+                    for team_name in team_names:
+                        try:
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.teams 
+                                (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, status)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """, (
+                                team_name,
+                                'Admin',
+                                f'admin_{created_count}',
+                                5,
+                                'Состав не указан',
+                                'admin@tournament.com',
+                                'approved'
+                            ))
+                            created_count += 1
+                        except Exception as e:
+                            print(f"Failed to create team {team_name}: {e}")
+                            continue
+                    
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'created': created_count,
+                        'message': f'Создано команд: {created_count}'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            # Создать новую заявку
             # Формируем members_info из всех полей
             members_list = [
                 f"Топ: {body_data.get('top_player', '')} - Телеграм: {body_data.get('top_telegram', '')}",
