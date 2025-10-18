@@ -6,9 +6,10 @@ import Icon from '@/components/ui/icon';
 
 interface AdminLoginProps {
   onLogin: (password: string) => void;
+  onCancel?: () => void;
 }
 
-export default function AdminLogin({ onLogin }: AdminLoginProps) {
+export default function AdminLogin({ onLogin, onCancel }: AdminLoginProps) {
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,10 +40,18 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                 className="text-base"
               />
             </div>
-            <Button type="submit" className="w-full">
-              <Icon name="LogIn" size={18} className="mr-2" />
-              Войти
-            </Button>
+            <div className="flex gap-2">
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+                  <Icon name="X" size={18} className="mr-2" />
+                  Отмена
+                </Button>
+              )}
+              <Button type="submit" className="flex-1">
+                <Icon name="LogIn" size={18} className="mr-2" />
+                Войти
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

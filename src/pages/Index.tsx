@@ -246,8 +246,13 @@ export default function Index() {
     });
   };
 
+  const handleCancelAdminLogin = () => {
+    setIsAdmin(false);
+    setActiveSection('register');
+  };
+
   if (isAdmin && !isAuthenticated) {
-    return <AdminLogin onLogin={handleAdminLogin} />;
+    return <AdminLogin onLogin={handleAdminLogin} onCancel={handleCancelAdminLogin} />;
   }
 
   return (
