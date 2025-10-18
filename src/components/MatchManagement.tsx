@@ -20,6 +20,7 @@ export default function MatchManagement() {
   const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [bulkTeamNames, setBulkTeamNames] = useState('');
   const [creatingTeams, setCreatingTeams] = useState(false);
+  const [generatingBracket, setGeneratingBracket] = useState(false);
   const { toast } = useToast();
 
   const loadMatches = async () => {
@@ -152,6 +153,45 @@ export default function MatchManagement() {
     }
   };
 
+  const handleGenerateBracket = async () => {
+    setGeneratingBracket(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'generate_bracket',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'Успешно',
+          description: `Создано матчей: ${data.matches_created}`,
+        });
+        loadMatches();
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось создать сетку',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setGeneratingBracket(false);
+    }
+  };
+
   const handleUpdateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
@@ -218,6 +258,19 @@ export default function MatchManagement() {
               <CardTitle>Управление матчами</CardTitle>
             </div>
             <div className="flex gap-2">
+              <Button
+                onClick={handleGenerateBracket}
+                disabled={generatingBracket}
+                variant="default"
+                size="sm"
+              >
+                {generatingBracket ? (
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Icon name="GitBranch" size={16} className="mr-2" />
+                )}
+                Создать сетку
+              </Button>
               <Button
                 onClick={() => setShowBulkCreate(!showBulkCreate)}
                 variant="outline"
