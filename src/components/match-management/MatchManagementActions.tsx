@@ -29,53 +29,57 @@ export default function MatchManagementActions({
   onClearAllTeams,
 }: MatchManagementActionsProps) {
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex gap-2 flex-wrap w-full sm:w-auto">
       <Button
         onClick={onGenerateBracket}
         disabled={generatingBracket}
         variant="default"
         size="sm"
+        className="flex-1 sm:flex-none text-xs sm:text-sm"
       >
         {generatingBracket ? (
-          <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+          <Icon name="Loader2" size={14} className="sm:mr-2 animate-spin" />
         ) : (
-          <Icon name="GitBranch" size={16} className="mr-2" />
+          <Icon name="GitBranch" size={14} className="sm:mr-2" />
         )}
-        Создать сетку
+        <span className="hidden sm:inline">Создать сетку</span>
       </Button>
       <Button
         onClick={onShuffleTeams}
         disabled={shufflingTeams}
         variant="outline"
         size="sm"
+        className="flex-1 sm:flex-none text-xs sm:text-sm"
       >
         {shufflingTeams ? (
-          <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+          <Icon name="Loader2" size={14} className="sm:mr-2 animate-spin" />
         ) : (
-          <Icon name="Shuffle" size={16} className="mr-2" />
+          <Icon name="Shuffle" size={14} className="sm:mr-2" />
         )}
-        Перемешать команды
+        <span className="hidden sm:inline">Перемешать</span>
       </Button>
       <Button
         onClick={onClearBracket}
         disabled={clearingBracket}
         variant="outline"
         size="sm"
+        className="flex-1 sm:flex-none text-xs sm:text-sm"
       >
         {clearingBracket ? (
-          <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+          <Icon name="Loader2" size={14} className="sm:mr-2 animate-spin" />
         ) : (
-          <Icon name="Trash2" size={16} className="mr-2" />
+          <Icon name="Trash2" size={14} className="sm:mr-2" />
         )}
-        Очистить сетку
+        <span className="hidden sm:inline">Очистить</span>
       </Button>
       <Button
         onClick={onToggleBulkCreate}
         variant="outline"
         size="sm"
+        className="flex-1 sm:flex-none text-xs sm:text-sm"
       >
-        <Icon name="Plus" size={16} className="mr-2" />
-        Добавить команды
+        <Icon name="Plus" size={14} className="sm:mr-2" />
+        <span className="hidden sm:inline">Добавить</span>
       </Button>
       <Button
         onClick={onExportTeams}

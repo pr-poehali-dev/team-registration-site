@@ -69,12 +69,12 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="text-center mb-8">
-        <h2 className="text-4xl font-heading font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="text-center mb-6 sm:mb-8 px-4">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold mb-2 sm:mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
           Администрация
         </h2>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
           Управление системой регистрации команд
         </p>
       </div>
@@ -86,34 +86,35 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
             Контроль периода приёма заявок и редактирования команд
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-6 bg-muted/50 rounded-lg">
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold">
+        <CardContent className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-6 bg-muted/50 rounded-lg">
+            <div className="space-y-1 flex-1">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {isRegistrationOpen ? 'Регистрация открыта' : 'Регистрация закрыта'}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {isRegistrationOpen 
                   ? 'Капитаны могут редактировать и удалять свои команды' 
                   : 'Капитаны не могут редактировать команды'}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant={isRegistrationOpen ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+              <Badge variant={isRegistrationOpen ? 'default' : 'secondary'} className="text-xs sm:text-sm px-3 py-1 text-center">
                 {isRegistrationOpen ? 'Активна' : 'Завершена'}
               </Badge>
               <Button 
                 onClick={handleToggleRegistration}
                 disabled={isLoadingSettings}
                 variant={isRegistrationOpen ? 'destructive' : 'default'}
-                size="lg"
+                size="default"
+                className="w-full sm:w-auto text-sm"
               >
                 <Icon 
                   name={isRegistrationOpen ? 'XCircle' : 'CheckCircle'} 
-                  size={18} 
+                  size={16} 
                   className="mr-2" 
                 />
-                {isRegistrationOpen ? 'Завершить регистрацию' : 'Открыть регистрацию'}
+                <span className="whitespace-nowrap">{isRegistrationOpen ? 'Завершить' : 'Открыть'} регистрацию</span>
               </Button>
             </div>
           </div>
@@ -131,7 +132,7 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">

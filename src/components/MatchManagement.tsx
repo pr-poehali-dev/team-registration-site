@@ -43,13 +43,13 @@ export default function MatchManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Icon name="Swords" size={24} className="text-primary" />
-              <CardTitle>Управление матчами</CardTitle>
+              <Icon name="Swords" size={20} className="text-primary sm:w-6 sm:h-6" />
+              <CardTitle className="text-lg sm:text-xl">Управление матчами</CardTitle>
             </div>
             <MatchManagementActions
               generatingBracket={generatingBracket}
