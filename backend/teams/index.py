@@ -256,6 +256,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Очистка списка команд
+            if resource == 'clear_teams':
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM t_p68536388_team_registration_si.teams")
+                    teams_count = cur.fetchone()[0]
+                    
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.teams")
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'message': f'Удалено команд: {teams_count}, турнирная сетка очищена'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             # Очистка турнирной сетки
             if resource == 'clear_bracket':
                 with conn.cursor() as cur:

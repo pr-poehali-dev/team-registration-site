@@ -23,6 +23,7 @@ export default function MatchManagement() {
   const [generatingBracket, setGeneratingBracket] = useState(false);
   const [clearingBracket, setClearingBracket] = useState(false);
   const [shufflingTeams, setShufflingTeams] = useState(false);
+  const [clearingTeams, setClearingTeams] = useState(false);
   const { toast } = useToast();
 
   const loadMatches = async () => {
@@ -280,6 +281,46 @@ export default function MatchManagement() {
     }
   };
 
+  const handleClearAllTeams = async () => {
+    setClearingTeams(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'clear_teams',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'Успешно',
+          description: data.message,
+        });
+        loadMatches();
+        loadTeams();
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось очистить команды',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setClearingTeams(false);
+    }
+  };
+
   const handleUpdateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
@@ -405,6 +446,23 @@ export default function MatchManagement() {
                   <Icon name="Download" size={16} className="mr-2" />
                 )}
                 Экспорт (CSV)
+              </Button>
+              <Button
+                onClick={() => {
+                  if (confirm('Вы уверены? Это удалит ВСЕ команды и матчи из базы данных!')) {
+                    handleClearAllTeams();
+                  }
+                }}
+                disabled={clearingTeams}
+                variant="destructive"
+                size="sm"
+              >
+                {clearingTeams ? (
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Icon name="XCircle" size={16} className="mr-2" />
+                )}
+                Очистить всё
               </Button>
             </div>
           </div>
