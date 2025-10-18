@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -8,9 +8,11 @@ import TeamsSection from '@/components/sections/TeamsSection';
 import RulesSection from '@/components/sections/RulesSection';
 import ContactsSection from '@/components/sections/ContactsSection';
 import ScheduleSection from '@/components/sections/ScheduleSection';
+import AdminLogin from '@/components/AdminLogin';
 import funcUrls from '../../backend/func2url.json';
 
 const API_URL = funcUrls.teams;
+const AUTH_URL = funcUrls['admin-auth'];
 
 interface Team {
   id: number;
@@ -29,6 +31,7 @@ type Section = 'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule'
 export default function Index() {
   const [activeSection, setActiveSection] = useState<Section>('home');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const { toast } = useToast();
 
@@ -126,6 +129,53 @@ export default function Index() {
     loadTeams();
   };
 
+  const handleAdminLogin = async (password: string) => {
+    try {
+      const response = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsAuthenticated(true);
+        setIsAdmin(true);
+        toast({
+          title: "Успешный вход",
+          description: "Добро пожаловать в админ-панель",
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Неверный пароль",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Проблема с подключением к серверу",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdmin(false);
+    setIsAuthenticated(false);
+    setActiveSection('home');
+    toast({
+      title: "Выход выполнен",
+      description: "Вы вышли из админ-панели",
+    });
+  };
+
+  if (isAdmin && !isAuthenticated) {
+    return <AdminLogin onLogin={handleAdminLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation 
@@ -134,6 +184,7 @@ export default function Index() {
         onNavigate={setActiveSection}
         onAdminToggle={() => setIsAdmin(!isAdmin)}
         onTeamsClick={handleTeamsClick}
+        onLogout={handleLogout}
       />
 
       <main className="container mx-auto px-4 py-12">

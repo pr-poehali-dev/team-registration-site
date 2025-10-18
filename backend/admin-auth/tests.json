@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "Check admin auth endpoint",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "password": "test"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "success": false
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

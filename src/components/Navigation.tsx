@@ -9,9 +9,17 @@ interface NavigationProps {
   onNavigate: (section: Section) => void;
   onAdminToggle: () => void;
   onTeamsClick: () => void;
+  onLogout?: () => void;
 }
 
-export default function Navigation({ activeSection, isAdmin, onNavigate, onAdminToggle, onTeamsClick }: NavigationProps) {
+export default function Navigation({ activeSection, isAdmin, onNavigate, onAdminToggle, onTeamsClick, onLogout }: NavigationProps) {
+  const handleAdminClick = () => {
+    if (isAdmin && onLogout) {
+      onLogout();
+    } else {
+      onAdminToggle();
+    }
+  };
   return (
     <nav className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
       <div className="container mx-auto px-4 py-4">
@@ -76,7 +84,7 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
           </div>
           <Button
             variant={isAdmin ? 'destructive' : 'outline'}
-            onClick={onAdminToggle}
+            onClick={handleAdminClick}
             className="transition-all"
           >
             <Icon name="Shield" size={18} className="mr-2" />
