@@ -408,17 +408,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 created_count = 0
+                skipped_count = 0
+                skipped_teams = []
+                
                 with conn.cursor() as cur:
-                    for team_name in team_names:
+                    for idx, team_name in enumerate(team_names):
+                        team_name_clean = team_name.strip()
+                        if not team_name_clean:
+                            continue
+                        
+                        cur.execute("""
+                            SELECT team_name FROM t_p68536388_team_registration_si.teams 
+                            WHERE team_name = %s
+                        """, (team_name_clean,))
+                        
+                        if cur.fetchone():
+                            skipped_count += 1
+                            skipped_teams.append(team_name_clean)
+                            continue
+                        
                         try:
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.teams 
                                 (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, status)
                                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                             """, (
-                                team_name,
+                                team_name_clean,
                                 'Admin',
-                                f'admin_{created_count}',
+                                f'admin_{idx}',
                                 5,
                                 'Состав не указан',
                                 'admin@tournament.com',
@@ -426,10 +443,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             ))
                             created_count += 1
                         except Exception as e:
-                            print(f"Failed to create team {team_name}: {e}")
+                            skipped_count += 1
+                            skipped_teams.append(team_name_clean)
+                            print(f"Failed to create team {team_name_clean}: {e}")
                             continue
                     
                     conn.commit()
+                
+                message = f'Создано команд: {created_count}'
+                if skipped_count > 0:
+                    message += f', пропущено (дубликаты): {skipped_count}'
                 
                 return {
                     'statusCode': 200,
@@ -440,7 +463,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({
                         'success': True,
                         'created': created_count,
-                        'message': f'Создано команд: {created_count}'
+                        'skipped': skipped_count,
+                        'skipped_teams': skipped_teams[:5] if skipped_teams else [],
+                        'message': message
                     }),
                     'isBase64Encoded': False
                 }
