@@ -3,8 +3,6 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
-import random
-import string
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -42,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text, auth_code
+                               created_at::text
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE captain_telegram = %s
                     """, (captain_telegram,))
@@ -119,12 +117,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'isBase64Encoded': False
                         }
                     
-                    auth_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-                    
                     cur.execute("""
                         INSERT INTO t_p68536388_team_registration_si.teams 
-                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, auth_code)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email)
+                        VALUES (%s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         body_data['team_name'],
@@ -132,8 +128,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         body_data['captain_telegram'],
                         5,
                         members_info,
-                        body_data.get('captain_email', 'no-email@provided.com'),
-                        auth_code
+                        body_data.get('captain_email', 'no-email@provided.com')
                     ))
                     team_id = cur.fetchone()[0]
                     conn.commit()
@@ -146,8 +141,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     },
                     'body': json.dumps({
                         'id': team_id, 
-                        'message': 'Team registered successfully',
-                        'auth_code': auth_code
+                        'message': 'Team registered successfully'
                     }),
                     'isBase64Encoded': False
                 }
@@ -190,14 +184,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'PATCH':
-            # Обновить команду (с проверкой владельца)
+            # Обновить команду
             body_data = json.loads(event.get('body', '{}'))
             team_id = body_data.get('id')
             team_name = body_data.get('team_name')
             captain_name = body_data.get('captain_name')
             captain_telegram = body_data.get('captain_telegram')
             members_info = body_data.get('members_info')
-            auth_code = body_data.get('auth_code')
             
             if not team_id:
                 return {
@@ -210,35 +203,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            if not auth_code:
-                return {
-                    'statusCode': 401,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'error': 'Требуется код авторизации'}),
-                    'isBase64Encoded': False
-                }
-            
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Проверяем код авторизации
-                cur.execute("""
-                    SELECT id FROM t_p68536388_team_registration_si.teams 
-                    WHERE id = %s AND auth_code = %s
-                """, (team_id, auth_code))
-                
-                if not cur.fetchone():
-                    return {
-                        'statusCode': 403,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({'error': 'Неверный код авторизации'}),
-                        'isBase64Encoded': False
-                    }
-                
+            with conn.cursor() as cur:
                 cur.execute("""
                     UPDATE t_p68536388_team_registration_si.teams 
                     SET team_name = %s, 
@@ -261,40 +226,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
-            # Удалить команду (с проверкой владельца)
+            # Удалить команду
             params = event.get('queryStringParameters', {})
             team_id = params.get('id')
-            auth_code = params.get('auth_code')
             
-            if not auth_code:
-                return {
-                    'statusCode': 401,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'error': 'Требуется код авторизации'}),
-                    'isBase64Encoded': False
-                }
-            
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Проверяем код авторизации
-                cur.execute("""
-                    SELECT id FROM t_p68536388_team_registration_si.teams 
-                    WHERE id = %s AND auth_code = %s
-                """, (team_id, auth_code))
-                
-                if not cur.fetchone():
-                    return {
-                        'statusCode': 403,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({'error': 'Неверный код авторизации'}),
-                        'isBase64Encoded': False
-                    }
-                
+            with conn.cursor() as cur:
                 cur.execute("""
                     DELETE FROM t_p68536388_team_registration_si.teams WHERE id = %s
                 """, (team_id,))
