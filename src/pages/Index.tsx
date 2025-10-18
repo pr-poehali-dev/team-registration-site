@@ -431,7 +431,7 @@ export default function Index() {
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold mb-2">Уведомление о результате</h3>
-                      <p className="text-muted-foreground">Решение по заявке будет отправлено на указанный email капитана команды.</p>
+                      <p className="text-muted-foreground">Решение по заявке будет отправлено в Telegram капитану команды.</p>
                     </div>
                   </div>
 
