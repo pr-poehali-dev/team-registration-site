@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import BulkTeamCreate from './match-management/BulkTeamCreate';
+import ChallongeImport from './match-management/ChallongeImport';
 import MatchList from './match-management/MatchList';
 import MatchEditForm from './match-management/MatchEditForm';
 import MatchManagementActions from './match-management/MatchManagementActions';
@@ -16,6 +17,9 @@ export default function MatchManagement() {
     exportingTeams,
     showBulkCreate,
     setShowBulkCreate,
+    showChallongeImport,
+    setShowChallongeImport,
+    importingChallonge,
     bulkTeamNames,
     setBulkTeamNames,
     creatingTeams,
@@ -29,6 +33,7 @@ export default function MatchManagement() {
     handleClearBracket,
     handleShuffleTeams,
     handleClearAllTeams,
+    handleImportChallonge,
     handleUpdateMatch,
   } = useMatchManagement();
 
@@ -59,6 +64,7 @@ export default function MatchManagement() {
               onShuffleTeams={handleShuffleTeams}
               onClearBracket={handleClearBracket}
               onToggleBulkCreate={() => setShowBulkCreate(!showBulkCreate)}
+              onToggleChallongeImport={() => setShowChallongeImport(!showChallongeImport)}
               onExportTeams={handleExportTeams}
               onClearAllTeams={handleClearAllTeams}
             />
@@ -75,6 +81,14 @@ export default function MatchManagement() {
               onClose={() => setShowBulkCreate(false)}
               onSubmit={handleBulkCreate}
               creatingTeams={creatingTeams}
+            />
+          )}
+
+          {showChallongeImport && (
+            <ChallongeImport
+              onClose={() => setShowChallongeImport(false)}
+              onImport={handleImportChallonge}
+              importing={importingChallonge}
             />
           )}
 

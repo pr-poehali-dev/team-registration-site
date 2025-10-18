@@ -340,6 +340,164 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Импорт с Challonge
+            if resource == 'import_challonge':
+                challonge_url = body_data.get('url', '')
+                api_key = os.environ.get('CHALLONGE_API_KEY')
+                
+                if not api_key:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': 'API ключ Challonge не настроен. Добавьте CHALLONGE_API_KEY в секреты проекта'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                # Извлекаем ID турнира из URL
+                tournament_id = challonge_url.strip('/').split('/')[-1]
+                if tournament_id.startswith('ru'):
+                    parts = challonge_url.split('/')
+                    tournament_id = parts[-1] if parts[-1] else parts[-2]
+                
+                # Запрос к API Challonge
+                import base64
+                auth_string = f'{api_key}:X'
+                auth_bytes = auth_string.encode('ascii')
+                base64_auth = base64.b64encode(auth_bytes).decode('ascii')
+                
+                # Получаем данные турнира
+                req = urllib.request.Request(
+                    f'https://api.challonge.com/v1/tournaments/{tournament_id}.json',
+                    headers={'Authorization': f'Basic {base64_auth}'}
+                )
+                
+                try:
+                    with urllib.request.urlopen(req) as response:
+                        tournament_data = json.loads(response.read().decode())
+                except Exception as e:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Не удалось получить турнир: {str(e)}'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                # Получаем участников
+                req = urllib.request.Request(
+                    f'https://api.challonge.com/v1/tournaments/{tournament_id}/participants.json',
+                    headers={'Authorization': f'Basic {base64_auth}'}
+                )
+                
+                with urllib.request.urlopen(req) as response:
+                    participants_data = json.loads(response.read().decode())
+                
+                # Получаем матчи
+                req = urllib.request.Request(
+                    f'https://api.challonge.com/v1/tournaments/{tournament_id}/matches.json',
+                    headers={'Authorization': f'Basic {base64_auth}'}
+                )
+                
+                with urllib.request.urlopen(req) as response:
+                    matches_data = json.loads(response.read().decode())
+                
+                # Очищаем существующие данные
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.teams WHERE status = 'approved'")
+                    
+                    # Маппинг challonge ID -> наш ID
+                    participant_map = {}
+                    
+                    # Создаём команды
+                    for p in participants_data:
+                        participant = p['participant']
+                        cur.execute("""
+                            INSERT INTO t_p68536388_team_registration_si.teams 
+                            (team_name, captain_name, captain_telegram, members_count, members_info, status)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            participant['name'],
+                            'Импорт Challonge',
+                            f"seed_{participant.get('seed', 0)}",
+                            5,
+                            'Импортировано с Challonge',
+                            'approved'
+                        ))
+                        team_id = cur.fetchone()[0]
+                        participant_map[participant['id']] = team_id
+                    
+                    # Создаём матчи
+                    matches_created = 0
+                    for m in matches_data:
+                        match = m['match']
+                        
+                        team1_id = participant_map.get(match.get('player1_id'))
+                        team2_id = participant_map.get(match.get('player2_id'))
+                        
+                        # Определяем статус
+                        status = 'upcoming'
+                        if match.get('state') == 'complete':
+                            status = 'finished'
+                        elif match.get('state') == 'open':
+                            status = 'live'
+                        
+                        # Определяем победителя
+                        winner = None
+                        if match.get('winner_id'):
+                            if match['winner_id'] == match.get('player1_id'):
+                                winner = 1
+                            elif match['winner_id'] == match.get('player2_id'):
+                                winner = 2
+                        
+                        if team1_id and team2_id:
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_id, team2_id, 
+                                 score1, score2, winner, status)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """, (
+                                match['suggested_play_order'] or matches_created + 1,
+                                'upper',
+                                match.get('round', 1),
+                                team1_id,
+                                team2_id,
+                                match.get('scores_csv', '').split('-')[0] if match.get('scores_csv') else None,
+                                match.get('scores_csv', '').split('-')[1] if match.get('scores_csv') and '-' in match.get('scores_csv', '') else None,
+                                winner,
+                                status
+                            ))
+                            matches_created += 1
+                    
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'teams_count': len(participants_data),
+                        'matches_count': matches_created,
+                        'message': f'Импортировано: {len(participants_data)} команд, {matches_created} матчей'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             # Очистка турнирной сетки
             if resource == 'clear_bracket':
                 with conn.cursor() as cur:

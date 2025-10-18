@@ -11,6 +11,7 @@ interface MatchManagementActionsProps {
   onShuffleTeams: () => void;
   onClearBracket: () => void;
   onToggleBulkCreate: () => void;
+  onToggleChallongeImport: () => void;
   onExportTeams: () => void;
   onClearAllTeams: () => void;
 }
@@ -25,6 +26,7 @@ export default function MatchManagementActions({
   onShuffleTeams,
   onClearBracket,
   onToggleBulkCreate,
+  onToggleChallongeImport,
   onExportTeams,
   onClearAllTeams,
 }: MatchManagementActionsProps) {
@@ -76,6 +78,14 @@ export default function MatchManagementActions({
       >
         <Icon name="Plus" size={16} className="mr-2" />
         Добавить команды
+      </Button>
+      <Button
+        onClick={onToggleChallongeImport}
+        variant="outline"
+        size="sm"
+      >
+        <Icon name="Download" size={16} className="mr-2" />
+        Импорт Challonge
       </Button>
       <Button
         onClick={onExportTeams}

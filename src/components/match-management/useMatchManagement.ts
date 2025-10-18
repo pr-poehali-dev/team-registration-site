@@ -18,6 +18,8 @@ export function useMatchManagement() {
   const [clearingBracket, setClearingBracket] = useState(false);
   const [shufflingTeams, setShufflingTeams] = useState(false);
   const [clearingTeams, setClearingTeams] = useState(false);
+  const [showChallongeImport, setShowChallongeImport] = useState(false);
+  const [importingChallonge, setImportingChallonge] = useState(false);
   const { toast } = useToast();
 
   const loadMatches = async () => {
@@ -315,6 +317,48 @@ export function useMatchManagement() {
     }
   };
 
+  const handleImportChallonge = async (challongeUrl: string) => {
+    setImportingChallonge(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'import_challonge',
+          url: challongeUrl,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'Успешно',
+          description: `Импортировано: ${data.teams_count} команд, ${data.matches_count} матчей`,
+        });
+        setShowChallongeImport(false);
+        await loadTeams();
+        await loadMatches();
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось импортировать турнир',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setImportingChallonge(false);
+    }
+  };
+
   const handleUpdateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
@@ -372,6 +416,9 @@ export function useMatchManagement() {
     exportingTeams,
     showBulkCreate,
     setShowBulkCreate,
+    showChallongeImport,
+    setShowChallongeImport,
+    importingChallonge,
     bulkTeamNames,
     setBulkTeamNames,
     creatingTeams,
@@ -385,6 +432,7 @@ export function useMatchManagement() {
     handleClearBracket,
     handleShuffleTeams,
     handleClearAllTeams,
+    handleImportChallonge,
     handleUpdateMatch,
   };
 }
