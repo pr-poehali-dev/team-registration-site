@@ -289,7 +289,7 @@ export default function Index() {
         )}
 
         {activeSection === 'admin' && isAdmin && (
-          <AdminSection teams={teams} />
+          <AdminSection teams={teams} onNavigate={setActiveSection} />
         )}
       </main>
 

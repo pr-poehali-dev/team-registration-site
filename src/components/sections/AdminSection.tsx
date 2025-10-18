@@ -10,9 +10,10 @@ const SETTINGS_URL = funcUrls['registration-settings'];
 
 interface AdminSectionProps {
   teams: { status: string }[];
+  onNavigate?: (section: 'teams') => void;
 }
 
-export default function AdminSection({ teams }: AdminSectionProps) {
+export default function AdminSection({ teams, onNavigate }: AdminSectionProps) {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const { toast } = useToast();
@@ -192,7 +193,7 @@ export default function AdminSection({ teams }: AdminSectionProps) {
               Просмотр и модерация зарегистрированных команд
             </p>
             <Button 
-              onClick={() => window.location.href = '/?section=teams'}
+              onClick={() => onNavigate && onNavigate('teams')}
               className="w-full"
               variant="outline"
             >
