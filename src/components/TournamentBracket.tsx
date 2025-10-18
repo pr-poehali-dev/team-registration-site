@@ -66,8 +66,23 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
   }) => {
     const matchHeight = 80;
     const gapBetweenMatches = 24;
-    const spacingMultiplier = roundIdx === 0 ? 0 : Math.pow(2, roundIdx - 1) * (matchHeight + gapBetweenMatches);
-    const topOffset = roundIdx === 0 ? 0 : spacingMultiplier / 2;
+    
+    const getSpacingForRound = (rIdx: number) => {
+      if (rIdx === 0) return gapBetweenMatches;
+      return Math.pow(2, rIdx) * gapBetweenMatches + (Math.pow(2, rIdx) - 1) * matchHeight;
+    };
+    
+    const getTopOffsetForRound = (rIdx: number) => {
+      if (rIdx === 0) return 0;
+      let offset = 0;
+      for (let i = 0; i < rIdx; i++) {
+        offset += matchHeight / 2 + getSpacingForRound(i) / 2;
+      }
+      return offset;
+    };
+
+    const spacing = getSpacingForRound(roundIdx);
+    const topOffset = getTopOffsetForRound(roundIdx);
 
     return (
       <div className="flex items-start">
@@ -75,7 +90,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
           className="flex flex-col" 
           style={{ 
             minWidth: '200px',
-            gap: `${spacingMultiplier}px`,
+            gap: `${spacing}px`,
             marginTop: `${topOffset}px`
           }}
         >
@@ -96,13 +111,13 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
             className="relative" 
             style={{ 
               width: '48px',
-              height: `${round.length * matchHeight + (round.length - 1) * spacingMultiplier}px`,
+              height: `${round.length * matchHeight + (round.length - 1) * spacing}px`,
               marginTop: `${topOffset}px`
             }}
           >
             {round.map((_, idx) => {
               if (idx % 2 === 0 && idx < round.length - 1) {
-                const matchSpacing = matchHeight + spacingMultiplier;
+                const matchSpacing = matchHeight + spacing;
                 const startY = idx * matchSpacing + matchHeight / 2;
                 const endY = (idx + 1) * matchSpacing + matchHeight / 2;
                 const midY = (startY + endY) / 2;
