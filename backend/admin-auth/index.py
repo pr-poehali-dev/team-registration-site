@@ -108,10 +108,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(db_url)
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT username FROM t_p68536388_team_registration_si.admin_users 
-                    WHERE id = %s
-                """, (admin_id,))
+                    WHERE id = {admin_id}
+                """)
                 admin = cur.fetchone()
                 
                 if admin and admin['username'] == '@Rywrxuna':
@@ -125,10 +125,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                cur.execute("""
+                cur.execute(f"""
                     DELETE FROM t_p68536388_team_registration_si.admin_users 
-                    WHERE id = %s
-                """, (admin_id,))
+                    WHERE id = {admin_id}
+                """)
                 conn.commit()
             
             return {
@@ -164,20 +164,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             password_hash = hashlib.sha256(password.encode()).hexdigest()
             
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
+                username_escaped = username.replace("'", "''")
+                cur.execute(f"""
                     SELECT id, username, is_active 
                     FROM t_p68536388_team_registration_si.admin_users 
-                    WHERE username = %s AND password_hash = %s
-                """, (username, password_hash))
+                    WHERE username = '{username_escaped}' AND password_hash = '{password_hash}'
+                """)
                 admin = cur.fetchone()
             
             if admin and admin['is_active']:
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    cur.execute(f"""
                         UPDATE t_p68536388_team_registration_si.admin_users 
                         SET last_login = CURRENT_TIMESTAMP 
-                        WHERE id = %s
-                    """, (admin['id'],))
+                        WHERE id = {admin['id']}
+                    """)
                     conn.commit()
                 
                 is_superadmin = admin['username'] == '@Rywrxuna'
