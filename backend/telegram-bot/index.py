@@ -83,6 +83,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "👋 Привет! Я бот для регистрации команд на турнир.\n\n"
                 "Используйте /register чтобы зарегистрировать команду.\n"
                 "Используйте /myteam чтобы посмотреть вашу команду.\n"
+                "Используйте /adminlogin для регистрации администратора.\n"
                 "Используйте /help для помощи."
             )
         
@@ -92,8 +93,62 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "/register - Регистрация новой команды\n"
                 "/myteam - Информация о вашей команде\n"
                 "/cancel - Отменить регистрацию команды\n"
+                "/adminlogin - Регистрация администратора\n"
                 "/help - Показать это сообщение"
             )
+        
+        elif text.startswith('/adminlogin'):
+            parts = text.split(maxsplit=2)
+            if len(parts) != 3:
+                send_message(bot_token, chat_id,
+                    "📝 <b>Регистрация администратора</b>\n\n"
+                    "Используйте формат:\n"
+                    "<code>/adminlogin логин пароль</code>\n\n"
+                    "Пример:\n"
+                    "<code>/adminlogin admin mypassword123</code>"
+                )
+            else:
+                username = parts[1]
+                password = parts[2]
+                telegram_username = message['from'].get('username', '')
+                
+                if not telegram_username:
+                    send_message(bot_token, chat_id,
+                        "❌ У вас не установлен username в Telegram.\n"
+                        "Пожалуйста, установите username в настройках Telegram."
+                    )
+                else:
+                    conn = psycopg2.connect(db_url)
+                    try:
+                        import hashlib
+                        password_hash = hashlib.sha256(password.encode()).hexdigest()
+                        
+                        with conn.cursor() as cur:
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.admin_users 
+                                (username, password_hash, telegram_chat_id, telegram_username)
+                                VALUES (%s, %s, %s, %s)
+                                ON CONFLICT (username) 
+                                DO UPDATE SET 
+                                    password_hash = EXCLUDED.password_hash,
+                                    telegram_chat_id = EXCLUDED.telegram_chat_id,
+                                    telegram_username = EXCLUDED.telegram_username,
+                                    last_login = CURRENT_TIMESTAMP
+                            """, (username, password_hash, chat_id, telegram_username))
+                            conn.commit()
+                        
+                        send_message(bot_token, chat_id,
+                            "✅ <b>Администратор зарегистрирован!</b>\n\n"
+                            f"Логин: <code>{username}</code>\n"
+                            f"Telegram: @{telegram_username}\n\n"
+                            "Теперь вы можете входить в админ-панель на сайте."
+                        )
+                    except Exception as e:
+                        send_message(bot_token, chat_id,
+                            f"❌ Ошибка при регистрации: {str(e)}"
+                        )
+                    finally:
+                        conn.close()
         
         elif text.startswith('/myteam'):
             telegram_username = message['from'].get('username', '')

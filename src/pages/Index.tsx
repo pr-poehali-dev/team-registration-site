@@ -203,12 +203,12 @@ export default function Index() {
     loadTeams();
   };
 
-  const handleAdminLogin = async (password: string) => {
+  const handleAdminLogin = async (username: string, password: string) => {
     try {
       const response = await fetch(AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ username, password })
       });
       
       const data = await response.json();
@@ -223,7 +223,7 @@ export default function Index() {
       } else {
         toast({
           title: "Ошибка",
-          description: "Неверный пароль",
+          description: data.message || "Неверный логин или пароль",
           variant: "destructive"
         });
       }
