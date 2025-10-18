@@ -39,6 +39,9 @@ export default function MatchManagement() {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportingTeams, setExportingTeams] = useState(false);
+  const [showBulkCreate, setShowBulkCreate] = useState(false);
+  const [bulkTeamNames, setBulkTeamNames] = useState('');
+  const [creatingTeams, setCreatingTeams] = useState(false);
   const { toast } = useToast();
 
   const loadMatches = async () => {
@@ -115,6 +118,62 @@ export default function MatchManagement() {
     }
   };
 
+  const handleBulkCreate = async () => {
+    const teamNames = bulkTeamNames
+      .split('\n')
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+
+    if (teamNames.length === 0) {
+      toast({
+        title: 'Ошибка',
+        description: 'Введите хотя бы одно название команды',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCreatingTeams(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resource: 'bulk_create',
+          team_names: teamNames,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'Успешно',
+          description: `Создано команд: ${data.created}`,
+        });
+        loadTeams();
+        setBulkTeamNames('');
+        setShowBulkCreate(false);
+      } else {
+        toast({
+          title: 'Ошибка',
+          description: data.message || 'Не удалось создать команды',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Проблема с подключением к серверу',
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingTeams(false);
+    }
+  };
+
   const handleUpdateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMatch) return;
@@ -180,25 +239,81 @@ export default function MatchManagement() {
               <Icon name="Swords" size={24} className="text-primary" />
               <CardTitle>Управление матчами</CardTitle>
             </div>
-            <Button
-              onClick={handleExportTeams}
-              disabled={exportingTeams}
-              variant="outline"
-              size="sm"
-            >
-              {exportingTeams ? (
-                <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
-              ) : (
-                <Icon name="Download" size={16} className="mr-2" />
-              )}
-              Экспорт команд (CSV)
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowBulkCreate(!showBulkCreate)}
+                variant="outline"
+                size="sm"
+              >
+                <Icon name="Plus" size={16} className="mr-2" />
+                Добавить команды списком
+              </Button>
+              <Button
+                onClick={handleExportTeams}
+                disabled={exportingTeams}
+                variant="outline"
+                size="sm"
+              >
+                {exportingTeams ? (
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <Icon name="Download" size={16} className="mr-2" />
+                )}
+                Экспорт команд (CSV)
+              </Button>
+            </div>
           </div>
           <CardDescription>
             Редактирование результатов матчей и обновление турнирной сетки
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {showBulkCreate && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Массовое создание команд</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowBulkCreate(false)}
+                  >
+                    <Icon name="X" size={16} />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Введите названия команд (каждая команда с новой строки)
+                </p>
+                <textarea
+                  className="w-full min-h-[200px] p-3 rounded-md border bg-background font-mono text-sm"
+                  placeholder="Team Alpha&#10;Team Bravo&#10;Team Charlie&#10;Team Delta&#10;Team Echo&#10;Team Foxtrot&#10;Team Golf&#10;Team Hotel"
+                  value={bulkTeamNames}
+                  onChange={(e) => setBulkTeamNames(e.target.value)}
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Команд для создания: {bulkTeamNames.split('\n').filter(n => n.trim().length > 0).length}
+                  </p>
+                  <Button
+                    onClick={handleBulkCreate}
+                    disabled={creatingTeams}
+                  >
+                    {creatingTeams ? (
+                      <>
+                        <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                        Создание...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="CheckCircle" size={16} className="mr-2" />
+                        Создать команды
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Список матчей */}
             <div className="space-y-4">
