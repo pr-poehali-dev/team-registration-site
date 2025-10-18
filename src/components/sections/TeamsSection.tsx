@@ -268,12 +268,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
 
       {isAdmin && (
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="all">Все</TabsTrigger>
             <TabsTrigger value="pending">Ожидают</TabsTrigger>
             <TabsTrigger value="approved">Одобрены</TabsTrigger>
             <TabsTrigger value="rejected">Отклонены</TabsTrigger>
-            <TabsTrigger value="settings">Настройки</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4 mt-6">
@@ -512,92 +511,6 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
                 </Card>
               ))
             )}
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-heading">Управление регистрацией</CardTitle>
-                <CardDescription>
-                  Контроль периода приёма заявок и редактирования команд
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-6 bg-muted/50 rounded-lg">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-semibold">
-                      {isRegistrationOpen ? 'Регистрация открыта' : 'Регистрация закрыта'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {isRegistrationOpen 
-                        ? 'Капитаны могут редактировать и удалять свои команды' 
-                        : 'Капитаны не могут редактировать команды'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={isRegistrationOpen ? 'default' : 'secondary'} className="text-sm px-3 py-1">
-                      {isRegistrationOpen ? 'Активна' : 'Завершена'}
-                    </Badge>
-                    <Button 
-                      onClick={handleToggleRegistration}
-                      disabled={isLoadingSettings}
-                      variant={isRegistrationOpen ? 'destructive' : 'default'}
-                      size="lg"
-                    >
-                      <Icon 
-                        name={isRegistrationOpen ? 'XCircle' : 'CheckCircle'} 
-                        size={18} 
-                        className="mr-2" 
-                      />
-                      {isRegistrationOpen ? 'Завершить регистрацию' : 'Открыть регистрацию'}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <Icon name="Info" size={18} className="text-blue-500 mt-0.5" />
-                    <div className="space-y-2 text-sm">
-                      <p className="font-medium text-blue-500">Информация о статусах:</p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• <strong>Открыта:</strong> Капитаны могут редактировать состав, название команды и отменять регистрацию</li>
-                        <li>• <strong>Закрыта:</strong> Команды заблокированы для изменений, можно только просматривать</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center space-y-2">
-                        <Icon name="Users" size={32} className="mx-auto text-primary" />
-                        <p className="text-3xl font-bold">{teams.length}</p>
-                        <p className="text-sm text-muted-foreground">Всего команд</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center space-y-2">
-                        <Icon name="CheckCircle" size={32} className="mx-auto text-green-500" />
-                        <p className="text-3xl font-bold">{teams.filter(t => t.status === 'approved').length}</p>
-                        <p className="text-sm text-muted-foreground">Одобрено</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center space-y-2">
-                        <Icon name="Clock" size={32} className="mx-auto text-orange-500" />
-                        <p className="text-3xl font-bold">{teams.filter(t => t.status === 'pending').length}</p>
-                        <p className="text-sm text-muted-foreground">На модерации</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       )}
