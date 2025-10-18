@@ -361,23 +361,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 # Извлекаем ID турнира из URL
                 tournament_id = challonge_url.strip('/').split('/')[-1]
-                if tournament_id.startswith('ru'):
-                    parts = challonge_url.split('/')
-                    tournament_id = parts[-1] if parts[-1] else parts[-2]
+                if not tournament_id or tournament_id == 'ru':
+                    parts = [p for p in challonge_url.split('/') if p and p != 'ru']
+                    tournament_id = parts[-1] if parts else ''
                 
-                # Запрос к API Challonge
-                import base64
-                auth_string = f'{api_key}:X'
-                auth_bytes = auth_string.encode('ascii')
-                base64_auth = base64.b64encode(auth_bytes).decode('ascii')
+                if not tournament_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': 'Не удалось извлечь ID турнира из URL'
+                        }),
+                        'isBase64Encoded': False
+                    }
                 
-                # Получаем данные турнира
-                req = urllib.request.Request(
-                    f'https://api.challonge.com/v1/tournaments/{tournament_id}.json',
-                    headers={'Authorization': f'Basic {base64_auth}'}
-                )
-                
+                # Получаем данные турнира (API key в URL параметрах)
                 try:
+                    req = urllib.request.Request(
+                        f'https://api.challonge.com/v1/tournaments/{tournament_id}.json?api_key={api_key}'
+                    )
                     with urllib.request.urlopen(req) as response:
                         tournament_data = json.loads(response.read().decode())
                 except Exception as e:
@@ -389,28 +395,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         },
                         'body': json.dumps({
                             'success': False,
-                            'message': f'Не удалось получить турнир: {str(e)}'
+                            'message': f'Не удалось получить турнир. Проверьте URL и API ключ. Ошибка: {str(e)}'
                         }),
                         'isBase64Encoded': False
                     }
                 
                 # Получаем участников
-                req = urllib.request.Request(
-                    f'https://api.challonge.com/v1/tournaments/{tournament_id}/participants.json',
-                    headers={'Authorization': f'Basic {base64_auth}'}
-                )
-                
-                with urllib.request.urlopen(req) as response:
-                    participants_data = json.loads(response.read().decode())
+                try:
+                    req = urllib.request.Request(
+                        f'https://api.challonge.com/v1/tournaments/{tournament_id}/participants.json?api_key={api_key}'
+                    )
+                    with urllib.request.urlopen(req) as response:
+                        participants_data = json.loads(response.read().decode())
+                except Exception as e:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Не удалось получить участников: {str(e)}'
+                        }),
+                        'isBase64Encoded': False
+                    }
                 
                 # Получаем матчи
-                req = urllib.request.Request(
-                    f'https://api.challonge.com/v1/tournaments/{tournament_id}/matches.json',
-                    headers={'Authorization': f'Basic {base64_auth}'}
-                )
-                
-                with urllib.request.urlopen(req) as response:
-                    matches_data = json.loads(response.read().decode())
+                try:
+                    req = urllib.request.Request(
+                        f'https://api.challonge.com/v1/tournaments/{tournament_id}/matches.json?api_key={api_key}'
+                    )
+                    with urllib.request.urlopen(req) as response:
+                        matches_data = json.loads(response.read().decode())
+                except Exception as e:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Не удалось получить матчи: {str(e)}'
+                        }),
+                        'isBase64Encoded': False
+                    }
                 
                 # Очищаем существующие данные
                 with conn.cursor() as cur:
