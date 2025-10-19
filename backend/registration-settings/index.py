@@ -2,26 +2,6 @@ import json
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from typing import Dict, Any
-
-def verify_admin_token(event: Dict[str, Any], conn) -> bool:
-    """Проверяет токен администратора"""
-    headers = event.get('headers', {})
-    admin_token = headers.get('X-Admin-Token', headers.get('x-admin-token', ''))
-    
-    if not admin_token:
-        return False
-    
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT is_active FROM t_p68536388_team_registration_si.admin_users 
-                WHERE username = %s AND is_active = true
-            """, (admin_token,))
-            admin = cur.fetchone()
-            return admin is not None
-    except:
-        return False
 
 def handler(event: dict, context: any) -> dict:
     '''
@@ -68,18 +48,6 @@ def handler(event: dict, context: any) -> dict:
             }
         
         elif method == 'POST':
-            # Проверка токена для изменения настроек
-            if not verify_admin_token(event, conn):
-                return {
-                    'statusCode': 401,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
-                    'isBase64Encoded': False
-                }
-            
             body_data = json.loads(event.get('body', '{}'))
             is_open = body_data.get('is_open')
             updated_by = body_data.get('updated_by', 'admin')

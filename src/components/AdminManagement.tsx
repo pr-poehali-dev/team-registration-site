@@ -169,16 +169,16 @@ export default function AdminManagement({ currentUsername }: AdminManagementProp
             </code>
           </div>
 
-          <div className="rounded-md border overflow-x-auto">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap">Логин</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell">Telegram</TableHead>
-                  <TableHead className="whitespace-nowrap hidden md:table-cell">Создан</TableHead>
-                  <TableHead className="whitespace-nowrap hidden md:table-cell">Последний вход</TableHead>
-                  <TableHead className="whitespace-nowrap">Статус</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Действия</TableHead>
+                  <TableHead>Логин</TableHead>
+                  <TableHead>Telegram</TableHead>
+                  <TableHead>Создан</TableHead>
+                  <TableHead>Последний вход</TableHead>
+                  <TableHead>Статус</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -191,33 +191,31 @@ export default function AdminManagement({ currentUsername }: AdminManagementProp
                 ) : (
                   admins.map((admin) => (
                     <TableRow key={admin.id}>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                          <span className="text-sm">{admin.username}</span>
-                          {admin.username === '@Rywrxuna' && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded w-fit">
-                              Суперадмин
-                            </span>
-                          )}
-                        </div>
+                      <TableCell className="font-medium">
+                        {admin.username}
+                        {admin.username === '@Rywrxuna' && (
+                          <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                            Суперадмин
+                          </span>
+                        )}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-sm">{admin.telegram_id || '—'}</TableCell>
-                      <TableCell className="hidden md:table-cell text-xs sm:text-sm text-muted-foreground">
+                      <TableCell>{admin.telegram_id || '—'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
                         {formatDate(admin.created_at)}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs sm:text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground">
                         {formatDate(admin.last_login)}
                       </TableCell>
                       <TableCell>
                         {admin.is_active ? (
                           <span className="inline-flex items-center gap-1 text-xs text-green-600">
                             <Icon name="CheckCircle" size={14} />
-                            <span className="hidden sm:inline">Активен</span>
+                            Активен
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <Icon name="XCircle" size={14} />
-                            <span className="hidden sm:inline">Неактивен</span>
+                            Неактивен
                           </span>
                         )}
                       </TableCell>

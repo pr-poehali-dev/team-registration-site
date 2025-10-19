@@ -5,13 +5,34 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
+      "expectedBody": {
+        "teams": "array"
+      },
       "bodyMatcher": "partial"
     },
     {
-      "name": "Find team by auth code",
-      "method": "GET",
-      "path": "/?auth_code=test123",
-      "expectedStatus": 200,
+      "name": "Create new team",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "team_name": "Test Team",
+        "captain_name": "TestPlayer",
+        "captain_telegram": "@testplayer",
+        "top_player": "TopLaner",
+        "top_telegram": "@toplaner",
+        "jungle_player": "JunglePro",
+        "jungle_telegram": "@junglepro",
+        "mid_player": "MidKing",
+        "mid_telegram": "@midking",
+        "adc_player": "AdcMaster",
+        "adc_telegram": "@adcmaster",
+        "support_player": "SupportGod",
+        "support_telegram": "@supportgod"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "message": "string"
+      },
       "bodyMatcher": "partial"
     }
   ]

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -12,7 +12,6 @@ import funcUrls from '../../backend/func2url.json';
 
 const API_URL = funcUrls.teams;
 const AUTH_URL = funcUrls['admin-auth'];
-const SETTINGS_URL = funcUrls['registration-settings'];
 
 interface Team {
   id: number;
@@ -33,61 +32,9 @@ export default function Index() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
-  const [adminToken, setAdminToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
-  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadRegistrationStatus();
-  }, []);
-
-  const loadRegistrationStatus = async () => {
-    try {
-      const response = await fetch(SETTINGS_URL);
-      const data = await response.json();
-      setIsRegistrationOpen(data.is_open);
-    } catch (error) {
-      console.error('Failed to load registration status:', error);
-    }
-  };
-
-  const handleToggleRegistration = async () => {
-    setIsLoadingSettings(true);
-    try {
-      const response = await fetch(SETTINGS_URL, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken
-        },
-        body: JSON.stringify({
-          is_open: !isRegistrationOpen,
-          updated_by: 'admin'
-        })
-      });
-
-      if (response.ok) {
-        setIsRegistrationOpen(!isRegistrationOpen);
-        toast({
-          title: isRegistrationOpen ? "Регистрация закрыта" : "Регистрация открыта",
-          description: isRegistrationOpen 
-            ? "Капитаны больше не могут редактировать команды" 
-            : "Капитаны могут редактировать свои команды"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось изменить статус регистрации",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingSettings(false);
-    }
-  };
 
   const [formData, setFormData] = useState({
     team_name: '',
@@ -142,12 +89,9 @@ export default function Index() {
       });
       
       if (response.ok) {
-        const data = await response.json();
-        
         toast({
-          title: "✅ Команда зарегистрирована!",
-          description: `Ваш код регистрации: ${data.auth_code}. Сохраните его для управления командой.`,
-          duration: 10000,
+          title: "Заявка отправлена",
+          description: "Ваша команда зарегистрирована и ожидает модерации",
         });
         
         setFormData({
@@ -210,10 +154,7 @@ export default function Index() {
     try {
       const response = await fetch(API_URL, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: teamId, status: newStatus })
       });
       
@@ -240,10 +181,7 @@ export default function Index() {
 
     try {
       const response = await fetch(`${API_URL}?id=${teamId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Admin-Token': adminToken
-        }
+        method: 'DELETE'
       });
       
       if (response.ok) {
@@ -281,7 +219,6 @@ export default function Index() {
         setIsAuthenticated(true);
         setIsAdmin(true);
         setAdminUsername(data.username || username);
-        setAdminToken(data.token || data.username);
         setIsSuperAdmin(data.is_superadmin || false);
         toast({
           title: "Успешный вход",
@@ -335,15 +272,12 @@ export default function Index() {
         onLogout={handleLogout}
       />
 
-      <main className="container mx-auto px-2 sm:px-4 py-6 sm:py-12">
+      <main className="container mx-auto px-4 py-12">
         {activeSection === 'register' && (
           <RegisterSection 
             formData={formData}
             onFormChange={setFormData}
             onSubmit={handleSubmit}
-            isRegistrationOpen={isRegistrationOpen}
-            isLoadingSettings={isLoadingSettings}
-            onToggleRegistration={isAdmin ? handleToggleRegistration : undefined}
           />
         )}
 
@@ -371,10 +305,6 @@ export default function Index() {
             onNavigate={setActiveSection}
             isSuperAdmin={isSuperAdmin}
             adminUsername={adminUsername}
-            adminToken={adminToken}
-            isRegistrationOpen={isRegistrationOpen}
-            isLoadingSettings={isLoadingSettings}
-            onToggleRegistration={handleToggleRegistration}
           />
         )}
       </main>
