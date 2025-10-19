@@ -193,6 +193,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'success': True, 
                         'message': 'Authorization successful',
                         'username': admin['username'],
+                        'token': admin['username'],
                         'is_superadmin': is_superadmin
                     }),
                     'isBase64Encoded': False

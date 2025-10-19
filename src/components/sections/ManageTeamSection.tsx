@@ -20,6 +20,7 @@ interface Team {
   status: 'pending' | 'approved' | 'rejected';
   admin_comment: string;
   created_at: string;
+  auth_code?: string;
 }
 
 interface EditFormData {
@@ -80,7 +81,7 @@ export default function ManageTeamSection() {
     if (!captainTelegram.trim()) {
       toast({
         title: "Ошибка",
-        description: "Введите ваш Telegram",
+        description: "Введите код регистрации",
         variant: "destructive"
       });
       return;
@@ -88,7 +89,7 @@ export default function ManageTeamSection() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}?captain_telegram=${encodeURIComponent(captainTelegram)}`);
+      const response = await fetch(`${API_URL}?auth_code=${encodeURIComponent(captainTelegram)}`);
       const data = await response.json();
       
       if (data.team) {
@@ -101,7 +102,7 @@ export default function ManageTeamSection() {
         setTeam(null);
         toast({
           title: "Команда не найдена",
-          description: "У вас нет зарегистрированной команды",
+          description: "Проверьте правильность кода регистрации",
           variant: "destructive"
         });
       }
@@ -246,10 +247,10 @@ export default function ManageTeamSection() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-heading font-bold">Управление командой</h1>
-        <p className="text-muted-foreground">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+      <div className="text-center space-y-2 sm:space-y-4 px-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold">Управление командой</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Найдите свою команду по Telegram капитана, чтобы редактировать или отменить регистрацию
         </p>
       </div>

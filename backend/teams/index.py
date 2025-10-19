@@ -4,6 +4,33 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
 import urllib.request
+import random
+import string
+
+def generate_auth_code() -> str:
+    """Генерирует код регистрации в формате REG-XXXX-XXXX"""
+    part1 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    return f'REG-{part1}-{part2}'
+
+def verify_admin_token(event: Dict[str, Any], conn) -> bool:
+    """Проверяет токен администратора"""
+    headers = event.get('headers', {})
+    admin_token = headers.get('X-Admin-Token', headers.get('x-admin-token', ''))
+    
+    if not admin_token:
+        return False
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT is_active FROM t_p68536388_team_registration_si.admin_users 
+                WHERE username = %s AND is_active = true
+            """, (admin_token,))
+            admin = cur.fetchone()
+            return admin is not None
+    except:
+        return False
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -101,13 +128,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Поиск по коду регистрации
+            auth_code = params.get('auth_code')
+            
             if captain_telegram:
-                # Найти команду по Telegram капитана
+                # Найти команду по Telegram капитана (legacy)
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text
+                               created_at::text, auth_code
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE captain_telegram = %s
                     """, (captain_telegram,))
@@ -120,6 +150,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({'team': team}),
+                    'isBase64Encoded': False
+                }
+            
+            if auth_code:
+                # Найти команду по коду регистрации
+                code_clean = auth_code.strip().upper().replace('-', '')
+                
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT id, team_name, captain_name, captain_telegram, 
+                               members_count, members_info, status, admin_comment, 
+                               created_at::text, auth_code
+                        FROM t_p68536388_team_registration_si.teams 
+                        WHERE UPPER(REPLACE(auth_code, '-', '')) = %s
+                    """, (code_clean,))
+                    team = cur.fetchone()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'team': team, 'success': team is not None}),
                     'isBase64Encoded': False
                 }
             else:
@@ -148,8 +202,85 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
             
+            # Проверка токена для админских операций
+            admin_resources = ['import_teams_list', 'generate_bracket', 'clear_all', 'clear_bracket', 'shuffle_and_generate', 'bulk_create']
+            if resource in admin_resources:
+                if not verify_admin_token(event, conn):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+            
+            # Импорт списка команд
+            if resource == 'import_teams_list':
+                teams_list = body_data.get('teams', [])
+                
+                if not teams_list or len(teams_list) < 2:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Нужно минимум 2 команды. Получено: {len(teams_list)}'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                teams_imported = 0
+                
+                with conn.cursor() as cur:
+                    for team_name in teams_list:
+                        team_name = team_name.strip()
+                        if not team_name:
+                            continue
+                        
+                        cur.execute("""
+                            SELECT id FROM t_p68536388_team_registration_si.teams 
+                            WHERE team_name = %s
+                        """, (team_name,))
+                        existing = cur.fetchone()
+                        
+                        if not existing:
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.teams 
+                                (team_name, captain_name, captain_telegram, members_count, members_info, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (team_name, 'Импорт', '@imported', 1, 'Импортировано из списка', 'approved'))
+                            teams_imported += 1
+                    
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'teams_imported': teams_imported,
+                        'message': f'Импортировано: {teams_imported} новых команд'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             # Генерация турнирной сетки
             if resource == 'generate_bracket':
+                settings = body_data.get('settings', {})
+                bracket_type = settings.get('bracketType', 'double')
+                auto_calculate = settings.get('autoCalculate', True)
+                custom_upper_rounds = settings.get('upperRounds')
+                custom_lower_rounds = settings.get('lowerRounds')
+                has_grand_final = settings.get('hasGrandFinal', True)
+                
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute("""
                         SELECT id, team_name 
@@ -182,62 +313,87 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     match_num = 1
                     
                     import math
-                    rounds_needed = math.ceil(math.log2(team_count))
                     
-                    for i in range(0, team_count, 2):
-                        team1_id = approved_teams[i]['id']
-                        team2_id = approved_teams[i+1]['id'] if i+1 < team_count else None
+                    if auto_calculate or custom_upper_rounds is None:
+                        rounds_needed = math.ceil(math.log2(team_count))
+                    else:
+                        rounds_needed = custom_upper_rounds
+                    
+                    if auto_calculate or custom_lower_rounds is None:
+                        lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    else:
+                        lower_rounds = custom_lower_rounds
+                    
+                    # Создаём матчи первого раунда с реальными командами
+                    team_idx = 0
+                    first_round_matches_count = (team_count + 1) // 2
+                    
+                    for m in range(first_round_matches_count):
+                        team1_id = approved_teams[team_idx]['id']
+                        team_idx += 1
                         
-                        if team2_id:
+                        if team_idx < team_count:
+                            team2_id = approved_teams[team_idx]['id']
+                            team_idx += 1
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_id, team2_id, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
                             """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
                         else:
+                            # Последняя команда получает BYE
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, team1_id, 'BYE', 'upcoming'))
+                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status, winner)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 1, team1_id, 'BYE (автопроход)', 'finished', team1_id))
+                        
                         match_num += 1
                         matches_created += 1
                     
-                    first_round_matches = (team_count + 1) // 2
-                    
+                    # Создаём последующие раунды с плейсхолдерами
+                    previous_round_start = 1
                     for r in range(2, rounds_needed + 1):
-                        num_matches = max(1, first_round_matches // (2 ** (r - 1)))
-                        for _ in range(num_matches):
+                        num_matches = max(1, first_round_matches_count // (2 ** (r - 1)))
+                        for m in range(num_matches):
+                            source_match_1 = previous_round_start + (m * 2)
+                            source_match_2 = previous_round_start + (m * 2) + 1
+                            
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', r, 'TBD', 'TBD', 'upcoming'))
+                            """, (match_num, 'upper', r, f'Победитель #{source_match_1}', f'Победитель #{source_match_2}', 'upcoming'))
                             match_num += 1
                             matches_created += 1
+                        previous_round_start = match_num - num_matches
                     
-                    lower_rounds = max(1, (rounds_needed - 1) * 2)
-                    for r in range(1, lower_rounds + 1):
-                        if r % 2 == 1:
-                            num_matches = max(1, first_round_matches // (2 ** ((r + 1) // 2)))
-                        else:
-                            num_matches = max(1, first_round_matches // (2 ** (r // 2 + 1)))
-                        
-                        for _ in range(num_matches):
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'lower', r, 'TBD', 'TBD', 'upcoming'))
-                            match_num += 1
-                            matches_created += 1
+                    # Нижняя сетка (losers bracket) - только для double elimination
+                    if bracket_type == 'double' and lower_rounds > 0:
+                        for r in range(1, lower_rounds + 1):
+                            if r % 2 == 1:
+                                num_matches = max(1, first_round_matches_count // (2 ** ((r + 1) // 2)))
+                            else:
+                                num_matches = max(1, first_round_matches_count // (2 ** (r // 2 + 1)))
+                            
+                            for m in range(num_matches):
+                                placeholder = f'TBD (Lower R{r})'
+                                cur.execute("""
+                                    INSERT INTO t_p68536388_team_registration_si.matches 
+                                    (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
+                                match_num += 1
+                                matches_created += 1
                     
-                    cur.execute("""
-                        INSERT INTO t_p68536388_team_registration_si.matches 
-                        (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (match_num, 'grand_final', 1, 'TBD', 'TBD', 'upcoming'))
-                    matches_created += 1
+                    # Гранд-финал - только для double elimination
+                    if bracket_type == 'double' and has_grand_final:
+                        cur.execute("""
+                            INSERT INTO t_p68536388_team_registration_si.matches 
+                            (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                        """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
+                        matches_created += 1
                     
                     conn.commit()
                 
@@ -252,6 +408,181 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'matches_created': matches_created,
                         'teams_count': team_count,
                         'message': f'Создана сетка для {team_count} команд, матчей: {matches_created}'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            # Очистка списка команд
+            if resource == 'clear_teams':
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM t_p68536388_team_registration_si.teams")
+                    teams_count = cur.fetchone()[0]
+                    
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.teams")
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'message': f'Удалено команд: {teams_count}, турнирная сетка очищена'
+                    }),
+                    'isBase64Encoded': False
+                }
+
+            # Очистка турнирной сетки
+            if resource == 'clear_bracket':
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'message': 'Турнирная сетка очищена'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            # Перемешать команды и создать новую сетку
+            if resource == 'shuffle_and_generate':
+                import random
+                
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT id, team_name 
+                        FROM t_p68536388_team_registration_si.teams 
+                        WHERE status = 'approved'
+                        ORDER BY created_at
+                    """)
+                    approved_teams = cur.fetchall()
+                
+                if len(approved_teams) < 2:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'message': f'Недостаточно команд. Одобрено: {len(approved_teams)}, нужно минимум 2'
+                        }),
+                        'isBase64Encoded': False
+                    }
+                
+                # Перемешиваем команды
+                shuffled_teams = list(approved_teams)
+                random.shuffle(shuffled_teams)
+                
+                team_count = len(shuffled_teams)
+                matches_created = 0
+                
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
+                    
+                    match_num = 1
+                    
+                    import math
+                    rounds_needed = math.ceil(math.log2(team_count))
+                    
+                    # Создаём матчи первого раунда с реальными командами
+                    team_idx = 0
+                    first_round_matches_count = (team_count + 1) // 2
+                    
+                    for m in range(first_round_matches_count):
+                        team1_id = shuffled_teams[team_idx]['id']
+                        team_idx += 1
+                        
+                        if team_idx < team_count:
+                            team2_id = shuffled_teams[team_idx]['id']
+                            team_idx += 1
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_id, team2_id, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
+                        else:
+                            # Последняя команда получает BYE (проходит в следующий раунд автоматически)
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status, winner)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 1, team1_id, 'BYE (автопроход)', 'finished', team1_id))
+                        
+                        match_num += 1
+                        matches_created += 1
+                    
+                    first_round_matches = (team_count + 1) // 2
+                    
+                    previous_round_start = 1
+                    for r in range(2, rounds_needed + 1):
+                        num_matches = max(1, first_round_matches // (2 ** (r - 1)))
+                        for m in range(num_matches):
+                            source_match_1 = previous_round_start + (m * 2)
+                            source_match_2 = previous_round_start + (m * 2) + 1
+                            
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', r, f'Победитель #{source_match_1}', f'Победитель #{source_match_2}', 'upcoming'))
+                            match_num += 1
+                            matches_created += 1
+                        previous_round_start = match_num - num_matches
+                    
+                    lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    lower_start = match_num
+                    for r in range(1, lower_rounds + 1):
+                        if r % 2 == 1:
+                            num_matches = max(1, first_round_matches // (2 ** ((r + 1) // 2)))
+                        else:
+                            num_matches = max(1, first_round_matches // (2 ** (r // 2 + 1)))
+                        
+                        for m in range(num_matches):
+                            if r == 1:
+                                placeholder = f'TBD (Раунд {r})'
+                            else:
+                                placeholder = f'TBD (Lower {r})'
+                            
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
+                            match_num += 1
+                            matches_created += 1
+                    
+                    cur.execute("""
+                        INSERT INTO t_p68536388_team_registration_si.matches 
+                        (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
+                    matches_created += 1
+                    
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'matches_created': matches_created,
+                        'teams_count': team_count,
+                        'message': f'Команды перемешаны. Создана сетка для {team_count} команд, матчей: {matches_created}'
                     }),
                     'isBase64Encoded': False
                 }
@@ -275,17 +606,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 created_count = 0
+                skipped_count = 0
+                skipped_teams = []
+                
                 with conn.cursor() as cur:
-                    for team_name in team_names:
+                    for idx, team_name in enumerate(team_names):
+                        team_name_clean = team_name.strip()
+                        if not team_name_clean:
+                            continue
+                        
+                        cur.execute("""
+                            SELECT team_name FROM t_p68536388_team_registration_si.teams 
+                            WHERE team_name = %s
+                        """, (team_name_clean,))
+                        
+                        if cur.fetchone():
+                            skipped_count += 1
+                            skipped_teams.append(team_name_clean)
+                            continue
+                        
                         try:
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.teams 
                                 (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, status)
                                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                             """, (
-                                team_name,
+                                team_name_clean,
                                 'Admin',
-                                f'admin_{created_count}',
+                                f'admin_{idx}',
                                 5,
                                 'Состав не указан',
                                 'admin@tournament.com',
@@ -293,10 +641,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             ))
                             created_count += 1
                         except Exception as e:
-                            print(f"Failed to create team {team_name}: {e}")
+                            skipped_count += 1
+                            skipped_teams.append(team_name_clean)
+                            print(f"Failed to create team {team_name_clean}: {e}")
                             continue
                     
                     conn.commit()
+                
+                message = f'Создано команд: {created_count}'
+                if skipped_count > 0:
+                    message += f', пропущено (дубликаты): {skipped_count}'
                 
                 return {
                     'statusCode': 200,
@@ -307,7 +661,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({
                         'success': True,
                         'created': created_count,
-                        'message': f'Создано команд: {created_count}'
+                        'skipped': skipped_count,
+                        'skipped_teams': skipped_teams[:5] if skipped_teams else [],
+                        'message': message
                     }),
                     'isBase64Encoded': False
                 }
@@ -349,10 +705,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'isBase64Encoded': False
                         }
                     
+                    auth_code = generate_auth_code()
+                    
                     cur.execute("""
                         INSERT INTO t_p68536388_team_registration_si.teams 
-                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, auth_code)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                     """, (
                         body_data['team_name'],
@@ -360,7 +718,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         body_data['captain_telegram'],
                         5,
                         members_info,
-                        body_data.get('captain_email', 'no-email@provided.com')
+                        body_data.get('captain_email', 'no-email@provided.com'),
+                        auth_code
                     ))
                     team_id = cur.fetchone()[0]
                     conn.commit()
@@ -372,7 +731,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'body': json.dumps({
-                        'id': team_id, 
+                        'id': team_id,
+                        'auth_code': auth_code,
                         'message': 'Team registered successfully'
                     }),
                     'isBase64Encoded': False
@@ -391,6 +751,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise
         
         elif method == 'PUT':
+            # Проверка токена для всех PUT операций (админские)
+            if not verify_admin_token(event, conn):
+                return {
+                    'statusCode': 401,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                    'isBase64Encoded': False
+                }
+            
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
             
@@ -412,12 +784,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 with conn.cursor() as cur:
                     cur.execute("""
                         UPDATE t_p68536388_team_registration_si.matches 
-                        SET team1_id = %s, team2_id = %s, score1 = %s, score2 = %s, 
-                            winner = %s, status = %s, scheduled_time = %s, updated_at = CURRENT_TIMESTAMP
+                        SET team1_id = %s, team2_id = %s, 
+                            team1_placeholder = %s, team2_placeholder = %s,
+                            score1 = %s, score2 = %s, 
+                            winner = %s, status = %s, scheduled_time = %s, 
+                            updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s
                     """, (
                         body_data.get('team1_id'),
                         body_data.get('team2_id'),
+                        body_data.get('team1_placeholder'),
+                        body_data.get('team2_placeholder'),
                         body_data.get('score1'),
                         body_data.get('score2'),
                         body_data.get('winner'),
@@ -501,6 +878,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
+            # Проверка токена для DELETE операций (админские)
+            if not verify_admin_token(event, conn):
+                return {
+                    'statusCode': 401,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                    'isBase64Encoded': False
+                }
+            
             # Удалить команду
             params = event.get('queryStringParameters', {})
             team_id = params.get('id')

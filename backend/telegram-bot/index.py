@@ -5,6 +5,14 @@ from psycopg2.extras import RealDictCursor
 from typing import Dict, Any
 import urllib.request
 import urllib.parse
+import random
+import string
+
+def generate_auth_code() -> str:
+    """Генерирует код регистрации в формате REG-XXXX-XXXX"""
+    part1 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    return f'REG-{part1}-{part2}'
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -164,7 +172,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 try:
                     with conn.cursor(cursor_factory=RealDictCursor) as cur:
                         cur.execute("""
-                            SELECT team_name, captain_name, members_info, status, admin_comment
+                            SELECT team_name, captain_name, members_info, status, admin_comment, auth_code
                             FROM t_p68536388_team_registration_si.teams 
                             WHERE captain_telegram = %s
                         """, (f'@{telegram_username}',))
@@ -180,7 +188,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         response = (
                             f"🏆 Ваша команда: {team['team_name']}\n"
                             f"👤 Капитан: {team['captain_name']}\n"
-                            f"📊 Статус: {status_text}\n\n"
+                            f"📊 Статус: {status_text}\n"
+                            f"🔑 Код регистрации: <code>{team['auth_code']}</code>\n\n"
                             f"👥 Состав:\n{team['members_info']}"
                         )
                         
@@ -206,24 +215,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             else:
                 conn = psycopg2.connect(db_url)
                 try:
-                    with conn.cursor() as cur:
+                    with conn.cursor(cursor_factory=RealDictCursor) as cur:
                         cur.execute("""
-                            SELECT id FROM t_p68536388_team_registration_si.teams 
+                            SELECT id, auth_code FROM t_p68536388_team_registration_si.teams 
                             WHERE captain_telegram = %s
                         """, (f'@{telegram_username}',))
+                        existing_team = cur.fetchone()
                         
-                        if cur.fetchone():
+                        if existing_team:
                             send_message(bot_token, chat_id,
-                                "⚠️ Вы уже зарегистрировали команду!\n"
-                                "Используйте /myteam чтобы посмотреть информацию."
+                                "⚠️ Вы уже зарегистрировали команду!\n\n"
+                                f"🔑 Ваш код регистрации: <code>{existing_team['auth_code']}</code>\n\n"
+                                "Используйте /myteam чтобы посмотреть полную информацию о команде."
                             )
                         else:
-                            website_url = "https://" + event.get('headers', {}).get('Host', 'your-site.com')
+                            auth_code = generate_auth_code()
+                            
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.teams 
+                                (team_name, captain_name, captain_telegram, members_count, members_info, captain_email, status, auth_code)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                RETURNING id
+                            """, (
+                                f'Команда @{telegram_username}',
+                                telegram_username,
+                                f'@{telegram_username}',
+                                5,
+                                'Состав не заполнен',
+                                'pending@telegram.com',
+                                'pending',
+                                auth_code
+                            ))
+                            conn.commit()
+                            
                             send_message(bot_token, chat_id,
-                                f"✅ Ваш Telegram: @{telegram_username}\n\n"
-                                f"Для завершения регистрации перейдите на сайт и заполните форму:\n"
-                                f"{website_url}\n\n"
-                                f"Важно: используйте @{telegram_username} в поле 'Telegram капитана'"
+                                f"✅ <b>Регистрация начата!</b>\n\n"
+                                f"🔑 Ваш код регистрации:\n"
+                                f"<code>{auth_code}</code>\n\n"
+                                f"💡 Сохраните этот код - он понадобится для управления командой!"
                             )
                 finally:
                     conn.close()

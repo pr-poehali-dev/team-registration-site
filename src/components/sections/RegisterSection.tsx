@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,21 +29,86 @@ interface RegisterSectionProps {
   };
   onFormChange: (data: any) => void;
   onSubmit: (e: React.FormEvent) => void;
+  isRegistrationOpen?: boolean;
+  isLoadingSettings?: boolean;
+  onToggleRegistration?: () => void;
 }
 
-export default function RegisterSection({ formData, onFormChange, onSubmit }: RegisterSectionProps) {
+export default function RegisterSection({ formData, onFormChange, onSubmit, isRegistrationOpen = true, isLoadingSettings = false, onToggleRegistration }: RegisterSectionProps) {
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in">
+    <div className="max-w-2xl mx-auto animate-fade-in px-4 space-y-6">
+      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start gap-4">
+          <div className="p-3 bg-blue-500/20 rounded-lg hidden sm:block">
+            <Icon name="Info" size={24} className="text-blue-500" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <h3 className="text-lg font-semibold text-blue-500">Регистрация в турнирном боте</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Для участия в турнире необходимо зарегистрироваться через Telegram бот. 
+              После регистрации вы получите уникальный код, который понадобится для управления командой.
+            </p>
+            <a 
+              href="https://t.me/TournamentWR_bot" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors mt-3"
+            >
+              <Icon name="Send" size={18} />
+              Открыть бота
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {onToggleRegistration && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-6 bg-muted/50 rounded-lg">
+              <div className="space-y-1 flex-1">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  {isRegistrationOpen ? 'Регистрация открыта' : 'Регистрация закрыта'}
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {isRegistrationOpen 
+                    ? 'Капитаны могут редактировать и удалять свои команды' 
+                    : 'Капитаны не могут редактировать команды'}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                <Badge variant={isRegistrationOpen ? 'default' : 'secondary'} className="text-xs sm:text-sm px-3 py-1 text-center">
+                  {isRegistrationOpen ? 'Активна' : 'Завершена'}
+                </Badge>
+                <Button 
+                  onClick={onToggleRegistration}
+                  disabled={isLoadingSettings}
+                  variant={isRegistrationOpen ? 'destructive' : 'default'}
+                  size="default"
+                  className="w-full sm:w-auto text-sm"
+                >
+                  <Icon 
+                    name={isRegistrationOpen ? 'XCircle' : 'CheckCircle'} 
+                    size={16} 
+                    className="mr-2" 
+                  />
+                  <span className="whitespace-nowrap">{isRegistrationOpen ? 'Завершить' : 'Открыть'} регистрацию</span>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="border-primary/20">
-        <CardHeader>
-          <CardTitle className="text-3xl font-heading flex items-center gap-3">
-            <Icon name="UserPlus" size={32} className="text-primary" />
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="text-2xl sm:text-3xl font-heading flex items-center gap-2 sm:gap-3">
+            <Icon name="UserPlus" size={24} className="text-primary sm:w-8 sm:h-8" />
             Регистрация команды
           </CardTitle>
-          <CardDescription>Заполните форму для регистрации вашей команды</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Заполните форму для регистрации вашей команды</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-6">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
             <div className="space-y-2">
               <Label htmlFor="team_name">Название команды *</Label>
               <Input

@@ -12,6 +12,7 @@ interface Team {
   status: 'pending' | 'approved' | 'rejected';
   admin_comment: string;
   created_at: string;
+  auth_code?: string;
 }
 
 interface TeamDetailsCardProps {
@@ -35,21 +36,22 @@ export default function TeamDetailsCard({
   return (
     <Card className="border-primary/20">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="font-heading">{team.team_name}</CardTitle>
-            <CardDescription>
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <div className="flex-1">
+            <CardTitle className="font-heading text-xl sm:text-2xl">{team.team_name}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Капитан: {team.captain_name} • Статус: {
                 team.status === 'pending' ? 'На модерации' :
                 team.status === 'approved' ? 'Одобрена' : 'Отклонена'
               }
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
               size="sm" 
               onClick={onEdit}
               disabled={!isRegistrationOpen}
+              className="w-full sm:w-auto"
             >
               <Icon name="Edit" size={16} className="mr-1" />
               Редактировать
@@ -59,6 +61,7 @@ export default function TeamDetailsCard({
               variant="destructive"
               onClick={onCancel}
               disabled={!isRegistrationOpen}
+              className="w-full sm:w-auto"
             >
               <Icon name="Trash2" size={16} className="mr-1" />
               Отменить регистрацию
@@ -67,8 +70,17 @@ export default function TeamDetailsCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm mb-4">
-          <span className="text-muted-foreground">Telegram капитана:</span> {team.captain_telegram}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="text-sm">
+            <span className="text-muted-foreground">Telegram капитана:</span>
+            <p className="font-medium">{team.captain_telegram}</p>
+          </div>
+          {team.auth_code && (
+            <div className="text-sm">
+              <span className="text-muted-foreground">Код регистрации:</span>
+              <p className="font-mono font-bold text-lg text-primary">{team.auth_code}</p>
+            </div>
+          )}
         </div>
         {team.members_info && (
           <div className="p-4 bg-muted/50 rounded-lg">
