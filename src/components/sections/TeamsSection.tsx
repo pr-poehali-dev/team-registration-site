@@ -188,7 +188,7 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
     ].join('\n');
 
     try {
-      const response = await fetch(`https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe`, {
+      const response = await fetch(`https://ce876244.tw1.ru/php-backend/api/teams.php`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

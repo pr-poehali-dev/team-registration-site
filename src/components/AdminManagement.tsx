@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const AUTH_URL = 'https://functions.poehali.dev/42990373-2c80-4ba8-b687-990125f12576';
+const AUTH_URL = 'https://ce876244.tw1.ru/php-backend/api/admin-auth.php';
 
 interface Admin {
   id: number;

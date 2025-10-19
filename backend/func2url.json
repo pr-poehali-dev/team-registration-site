@@ -1,7 +1,7 @@
 {
-  "setup-bot": "https://functions.poehali.dev/d4a47c63-2717-4ce2-966c-111e4e4bc3bf",
-  "telegram-bot": "https://functions.poehali.dev/efa0cbb2-68dd-40bd-8794-6060b8390af2",
-  "registration-settings": "https://functions.poehali.dev/882c0cbc-4c6b-435e-a35d-dadbb2ac5773",
-  "admin-auth": "https://functions.poehali.dev/42990373-2c80-4ba8-b687-990125f12576",
-  "teams": "https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe"
+  "setup-bot": "https://ce876244.tw1.ru/php-backend/api/setup-bot.php",
+  "telegram-bot": "https://ce876244.tw1.ru/php-backend/api/telegram-bot.php",
+  "registration-settings": "https://ce876244.tw1.ru/php-backend/api/registration-settings.php",
+  "admin-auth": "https://ce876244.tw1.ru/php-backend/api/admin-auth.php",
+  "teams": "https://ce876244.tw1.ru/php-backend/api/teams.php"
 }
