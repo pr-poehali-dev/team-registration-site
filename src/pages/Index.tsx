@@ -46,10 +46,16 @@ export default function Index() {
   const loadRegistrationStatus = async () => {
     try {
       const response = await fetch(SETTINGS_URL);
+      if (!response.ok) {
+        console.warn('Registration settings not available, using default');
+        setIsRegistrationOpen(true);
+        return;
+      }
       const data = await response.json();
       setIsRegistrationOpen(data.is_open);
     } catch (error) {
       console.error('Failed to load registration status:', error);
+      setIsRegistrationOpen(true);
     }
   };
 
