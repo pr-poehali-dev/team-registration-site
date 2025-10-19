@@ -11,8 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Подключение к БД
 $host = 'localhost';
-$dbname = 'ce876244_tournament';
-$username = 'ce876244_tournament';
+$dbname = 'ce876244_tournam';
+$username = 'ce876244_tournam';
 $password = 'kh5-XQi-EWE-9gS';
 
 try {
