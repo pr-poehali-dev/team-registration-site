@@ -50,7 +50,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
       <div className="text-center">
         <Badge variant="outline">{title}</Badge>
       </div>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 my-[51px]">
         {matches.map((match) => (
           <MatchCard key={match.id} match={match} />
         ))}
