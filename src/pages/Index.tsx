@@ -8,7 +8,7 @@ import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
 import AdminSection from '@/components/sections/AdminSection';
 import AdminLogin from '@/components/AdminLogin';
-const API_URL = 'https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe';
+const API_URL = '/php-backend/api/teams.php';
 const AUTH_URL = API_URL;
 const SETTINGS_URL = API_URL;
 
