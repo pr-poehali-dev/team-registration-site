@@ -43,9 +43,19 @@ nano .env
 ```
 
 Заполни:
-- `TELEGRAM_BOT_TOKEN` - токен от @BotFather
-- `DATABASE_URL` - подключение к БД (замени на MySQL формат)
-- `WEBHOOK_URL` - домен твоего VPS
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
+DATABASE_URL=postgresql://user:password@localhost:5432/tournam_db
+WEBHOOK_URL=https://your-vps-domain.ru
+```
+
+**Для подключения к MySQL на Timeweb хостинге:**
+```env
+# Если база на Timeweb хостинге
+DATABASE_URL=mysql://ce876244_tournam:password@localhost/ce876244_tournam
+```
+
+**Важно:** Для MySQL нужно заменить `psycopg2` на `pymysql` в `requirements.txt`
 
 Сохрани (Ctrl+O, Enter, Ctrl+X).
 

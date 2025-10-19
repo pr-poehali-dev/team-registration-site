@@ -1,10 +1,9 @@
 import os
 import json
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import pymysql
+from pymysql.cursors import DictCursor
 import random
 import string
-import hashlib
 from flask import Flask, request
 import requests
 
@@ -12,30 +11,37 @@ app = Flask(__name__)
 
 # Конфигурация из переменных окружения
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-DATABASE_URL = os.environ.get('DATABASE_URL')
-WEBHOOK_URL = os.environ.get('WEBHOOK_URL')  # https://ваш-vps-домен.ru/webhook
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_USER = os.environ.get('DB_USER')
+DB_PASSWORD = os.environ.get('DB_PASSWORD')
+DB_NAME = os.environ.get('DB_NAME')
+WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
 
-def generate_auth_code():
-    """Генерирует код регистрации в формате REG-XXXX-XXXX"""
-    part1 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-    part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-    return f'REG-{part1}-{part2}'
+def get_db_connection():
+    """Создание подключения к MySQL"""
+    return pymysql.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        cursorclass=DictCursor
+    )
 
 def save_telegram_user(username, chat_id, first_name):
     """Сохранение или обновление пользователя Telegram"""
     if not username:
         return
     
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO telegram_users (username, chat_id, first_name)
                 VALUES (%s, %s, %s)
-                ON CONFLICT (username) 
-                DO UPDATE SET chat_id = EXCLUDED.chat_id, 
-                              first_name = EXCLUDED.first_name,
-                              updated_at = CURRENT_TIMESTAMP
+                ON DUPLICATE KEY UPDATE 
+                    chat_id = VALUES(chat_id), 
+                    first_name = VALUES(first_name),
+                    updated_at = CURRENT_TIMESTAMP
             """, (username, chat_id, first_name))
             conn.commit()
     finally:
@@ -70,7 +76,6 @@ def handle_help(chat_id):
         "📋 Доступные команды:\n\n"
         "/register - Регистрация новой команды\n"
         "/myteam - Информация о вашей команде\n"
-        "/cancel - Отменить регистрацию команды\n"
         "/help - Показать это сообщение"
     )
 
@@ -83,9 +88,9 @@ def handle_myteam(chat_id, telegram_username):
         )
         return
     
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = get_db_connection()
     try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("""
                 SELECT team_name, captain_name, members_info, status, admin_comment, auth_code
                 FROM teams 
@@ -132,7 +137,7 @@ def handle_register(chat_id):
 @app.route('/webhook', methods=['POST'])
 def webhook():
     """Обработка webhook от Telegram"""
-    if not BOT_TOKEN or not DATABASE_URL:
+    if not BOT_TOKEN or not DB_NAME:
         return {'error': 'Configuration error'}, 500
     
     update = request.get_json()
@@ -173,9 +178,9 @@ def notify_captain():
     if not captain_telegram or not message_text:
         return {'error': 'Missing captain_telegram or message'}, 400
     
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = get_db_connection()
     try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with conn.cursor() as cur:
             cur.execute("""
                 SELECT chat_id FROM telegram_users 
                 WHERE username = %s
