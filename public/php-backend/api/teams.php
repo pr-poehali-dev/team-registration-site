@@ -108,9 +108,30 @@ elseif ($method === 'POST') {
     
     if ($resource === 'settings') {
         $is_open = $data['is_open'] ? 1 : 0;
-        $stmt = $pdo->prepare("UPDATE registration_settings SET is_open = ? WHERE id = 1");
-        $stmt->execute([$is_open]);
-        echo json_encode(['success' => true]);
+        $updated_by = $data['updated_by'] ?? 'admin';
+        
+        // Проверяем существование записи
+        $stmt = $pdo->query("SELECT id FROM registration_settings ORDER BY updated_at DESC LIMIT 1");
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            // Обновляем существующую запись
+            $stmt = $pdo->prepare("
+                UPDATE registration_settings 
+                SET is_open = ?, updated_by = ?, updated_at = NOW() 
+                WHERE id = ?
+            ");
+            $stmt->execute([$is_open, $updated_by, $existing['id']]);
+        } else {
+            // Создаём новую запись
+            $stmt = $pdo->prepare("
+                INSERT INTO registration_settings (is_open, updated_by) 
+                VALUES (?, ?)
+            ");
+            $stmt->execute([$is_open, $updated_by]);
+        }
+        
+        echo json_encode(['success' => true, 'is_open' => (bool)$is_open]);
         exit;
     }
     
@@ -160,11 +181,25 @@ elseif ($method === 'POST') {
 elseif ($method === 'PUT') {
     $data = json_decode(file_get_contents('php://input'), true);
     
+    // Админ может обновлять статус всегда (для модерации заявок)
     if (isset($data['status'])) {
         $stmt = $pdo->prepare("UPDATE teams SET status = ? WHERE id = ?");
         $stmt->execute([$data['status'], $data['id']]);
         echo json_encode(['success' => true]);
     } else {
+        // Проверка: регистрация открыта?
+        $stmt = $pdo->query("SELECT is_open FROM registration_settings ORDER BY updated_at DESC LIMIT 1");
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$settings || !$settings['is_open']) {
+            http_response_code(403);
+            echo json_encode([
+                'error' => 'Registration closed',
+                'message' => 'Регистрация завершена. Редактирование команд больше не доступно.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        
         // Автоматически подсчитать количество участников
         $members_count = count(array_filter(explode("\n", $data['members_info'])));
         
@@ -189,6 +224,19 @@ elseif ($method === 'PUT') {
 elseif ($method === 'DELETE') {
     $id = $_GET['id'] ?? null;
     if ($id) {
+        // Проверка: регистрация открыта?
+        $stmt = $pdo->query("SELECT is_open FROM registration_settings ORDER BY updated_at DESC LIMIT 1");
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$settings || !$settings['is_open']) {
+            http_response_code(403);
+            echo json_encode([
+                'error' => 'Registration closed',
+                'message' => 'Регистрация завершена. Удаление команд больше не доступно.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        
         $stmt = $pdo->prepare("DELETE FROM teams WHERE id = ?");
         $stmt->execute([$id]);
         echo json_encode(['success' => true]);

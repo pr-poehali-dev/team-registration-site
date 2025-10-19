@@ -22,9 +22,10 @@ CREATE TABLE IF NOT EXISTS admin_users (
 );
 
 CREATE TABLE IF NOT EXISTS registration_settings (
-    id INT PRIMARY KEY DEFAULT 1,
-    is_open BOOLEAN DEFAULT TRUE,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    is_open BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_by VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS matches (
@@ -71,6 +72,8 @@ CREATE INDEX IF NOT EXISTS idx_team_status ON teams(status);
 
 CREATE INDEX IF NOT EXISTS idx_team_auth_code ON teams(auth_code);
 
-INSERT IGNORE INTO registration_settings (id, is_open) VALUES (1, TRUE);
+INSERT INTO registration_settings (is_open, updated_by)
+SELECT TRUE, 'system'
+WHERE NOT EXISTS (SELECT 1 FROM registration_settings);
 
 INSERT IGNORE INTO admin_users (username, password_hash, is_superadmin) VALUES ('@Rywrxuna', '7e45e9698d89fc03a9012fa25e87a37ccf7154f623c4a49c1e8df294f30ad7c9', TRUE);
