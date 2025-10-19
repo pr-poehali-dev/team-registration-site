@@ -1,4 +1,6 @@
 import { Match } from './types';
+import { useState, useEffect } from 'react';
+import BracketCustomizer, { BracketSettings } from './BracketCustomizer';
 
 interface BracketViewProps {
   matches: Match[];
@@ -6,7 +8,43 @@ interface BracketViewProps {
   onSelectMatch: (match: Match) => void;
 }
 
+const STORAGE_KEY = 'bracket-view-settings';
+
 export default function BracketView({ matches, selectedMatch, onSelectMatch }: BracketViewProps) {
+  const loadSettings = (): BracketSettings => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        return {
+          cardWidth: settings.cardWidth ?? 160,
+          cardGap: settings.cardGap ?? 8,
+          columnGap: settings.columnGap ?? 16,
+          fontSize: settings.fontSize ?? 12,
+          showMatchNumbers: settings.showMatchNumbers ?? true,
+          showScores: settings.showScores ?? true,
+          compactMode: settings.compactMode ?? false,
+        };
+      }
+    } catch (e) {
+      console.error('Failed to load bracket settings:', e);
+    }
+    return {
+      cardWidth: 160,
+      cardGap: 8,
+      columnGap: 16,
+      fontSize: 12,
+      showMatchNumbers: true,
+      showScores: true,
+      compactMode: false,
+    };
+  };
+
+  const [settings, setSettings] = useState<BracketSettings>(loadSettings());
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }, [settings]);
   const groupByBracketAndRound = () => {
     const brackets: { [key: string]: { [key: number]: Match[] } } = {
       upper: {},
@@ -33,34 +71,41 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
     <div
       key={match.id}
       onClick={() => onSelectMatch(match)}
-      className={`p-2 border rounded-lg cursor-pointer transition-all text-xs ${
+      style={{ 
+        width: `${settings.cardWidth}px`,
+        fontSize: `${settings.fontSize}px`,
+        padding: settings.compactMode ? '6px' : '8px'
+      }}
+      className={`border rounded-lg cursor-pointer transition-all ${
         selectedMatch?.id === match.id
           ? 'border-primary bg-primary/10 shadow-md'
           : 'hover:border-primary/50 hover:shadow-sm'
       }`}
     >
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-muted-foreground font-mono">
-          #{match.match_number}
-        </span>
-        <span className={`text-[10px] px-1 py-0.5 rounded ${
-          match.status === 'finished' ? 'bg-green-500/20 text-green-700' :
-          match.status === 'live' ? 'bg-red-500/20 text-red-700' :
-          'bg-gray-500/20 text-gray-700'
-        }`}>
-          {match.status === 'finished' ? '✓' : match.status === 'live' ? '●' : '○'}
-        </span>
-      </div>
-      <div className="space-y-0.5">
+      {settings.showMatchNumbers && (
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] text-muted-foreground font-mono">
+            #{match.match_number}
+          </span>
+          <span className={`text-[10px] px-1 py-0.5 rounded ${
+            match.status === 'finished' ? 'bg-green-500/20 text-green-700' :
+            match.status === 'live' ? 'bg-red-500/20 text-red-700' :
+            'bg-gray-500/20 text-gray-700'
+          }`}>
+            {match.status === 'finished' ? '✓' : match.status === 'live' ? '●' : '○'}
+          </span>
+        </div>
+      )}
+      <div className={settings.compactMode ? 'space-y-0' : 'space-y-0.5'}>
         <div className="truncate font-medium">
           {match.team1_name || match.team1_placeholder || 'TBD'}
         </div>
-        <div className="text-[10px] text-muted-foreground">vs</div>
+        {!settings.compactMode && <div className="text-[10px] text-muted-foreground">vs</div>}
         <div className="truncate font-medium">
           {match.team2_name || match.team2_placeholder || 'TBD'}
         </div>
       </div>
-      {match.score1 !== undefined && match.score2 !== undefined && (
+      {settings.showScores && match.score1 !== undefined && match.score2 !== undefined && (
         <div className="text-xs font-bold mt-1 text-center">
           {match.score1} : {match.score2}
         </div>
@@ -69,17 +114,22 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium">Турнирная сетка</h3>
+        <BracketCustomizer settings={settings} onSettingsChange={setSettings} />
+      </div>
+
       {upperRounds.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-primary">Верхняя сетка</h4>
-          <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="flex overflow-x-auto pb-2" style={{ gap: `${settings.columnGap}px` }}>
             {upperRounds.map(round => (
-              <div key={`upper-${round}`} className="flex flex-col gap-2 min-w-[160px]">
+              <div key={`upper-${round}`} className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
                 <div className="text-xs font-medium text-muted-foreground sticky top-0 bg-background pb-1">
                   Раунд {round}
                 </div>
-                <div className="space-y-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
                   {brackets.upper[round].map(match => renderMatch(match))}
                 </div>
               </div>
@@ -91,13 +141,13 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
       {lowerRounds.length > 0 && (
         <div className="space-y-2 border-t pt-4">
           <h4 className="text-sm font-semibold text-orange-600">Нижняя сетка</h4>
-          <div className="flex gap-4 overflow-x-auto pb-2">
+          <div className="flex overflow-x-auto pb-2" style={{ gap: `${settings.columnGap}px` }}>
             {lowerRounds.map(round => (
-              <div key={`lower-${round}`} className="flex flex-col gap-2 min-w-[160px]">
+              <div key={`lower-${round}`} className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
                 <div className="text-xs font-medium text-muted-foreground sticky top-0 bg-background pb-1">
                   Раунд {round}
                 </div>
-                <div className="space-y-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
                   {brackets.lower[round].map(match => renderMatch(match))}
                 </div>
               </div>
@@ -109,9 +159,9 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
       {hasGrandFinal && (
         <div className="space-y-2 border-t pt-4">
           <h4 className="text-sm font-semibold text-yellow-600">Гранд-финал</h4>
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-2 min-w-[160px]">
-              <div className="space-y-2">
+          <div className="flex" style={{ gap: `${settings.columnGap}px` }}>
+            <div className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
                 {brackets.grand_final[1].map(match => renderMatch(match))}
               </div>
             </div>
