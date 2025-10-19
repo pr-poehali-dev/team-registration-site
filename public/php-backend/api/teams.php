@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $host = 'localhost';
 $dbname = 'ce876244_tournament';
 $username = 'ce876244_tournament';
-$password = 'ваш_пароль_от_бд'; // ЗАМЕНИ НА РЕАЛЬНЫЙ ПАРОЛЬ
+$password = 'kh5-XQi-EWE-9gS';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
