@@ -1033,6 +1033,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 with conn.cursor() as cur:
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
                     cur.execute("DELETE FROM t_p68536388_team_registration_si.pending_actions")
                     cur.execute("DELETE FROM t_p68536388_team_registration_si.teams")
                     conn.commit()
