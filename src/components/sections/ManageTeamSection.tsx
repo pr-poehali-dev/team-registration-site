@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import funcUrls from '../../../backend/func2url.json';
+import { API_CONFIG } from '@/config/api';
 import TeamSearchCard from '@/components/manage-team/TeamSearchCard';
 import TeamDetailsCard from '@/components/manage-team/TeamDetailsCard';
 import EditTeamDialog from '@/components/manage-team/EditTeamDialog';
 import RegistrationClosedAlert from '@/components/manage-team/RegistrationClosedAlert';
 import ConfirmDialog from '@/components/manage-team/ConfirmDialog';
 
-const API_URL = funcUrls.teams;
-const SETTINGS_URL = funcUrls['registration-settings'];
+const API_URL = API_CONFIG.TEAMS_URL;
+const SETTINGS_URL = API_CONFIG.SETTINGS_URL;
 
 interface Team {
   id: number;

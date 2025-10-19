@@ -4,11 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import funcUrls from '../../../backend/func2url.json';
+import { API_CONFIG } from '@/config/api';
 import AdminManagement from '@/components/AdminManagement';
 import MatchManagement from '@/components/MatchManagement';
 
-const SETTINGS_URL = funcUrls['registration-settings'];
+const SETTINGS_URL = API_CONFIG.SETTINGS_URL;
 
 interface AdminSectionProps {
   teams: { status: string }[];

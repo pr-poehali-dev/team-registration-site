@@ -6,12 +6,12 @@ import Icon from '@/components/ui/icon';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
-import funcUrls from '../../../backend/func2url.json';
+import { API_CONFIG } from '@/config/api';
 import TeamCard from '@/components/teams/TeamCard';
 import TeamEditDialog from '@/components/teams/TeamEditDialog';
 import PublicTeamCard from '@/components/teams/PublicTeamCard';
 
-const SETTINGS_URL = funcUrls['registration-settings'];
+const SETTINGS_URL = API_CONFIG.SETTINGS_URL;
 
 interface Team {
   id: number;

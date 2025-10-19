@@ -4,9 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import TournamentBracket from '@/components/TournamentBracket';
-import funcUrls from '../../../backend/func2url.json';
+import { API_CONFIG } from '@/config/api';
 
-const API_URL = funcUrls.teams;
+const API_URL = API_CONFIG.TEAMS_URL;
 
 interface Match {
   id: number;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { API_CONFIG } from '@/config/api';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import RegisterSection from '@/components/sections/RegisterSection';
@@ -8,9 +9,9 @@ import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
 import AdminSection from '@/components/sections/AdminSection';
 import AdminLogin from '@/components/AdminLogin';
-const API_URL = '/php-backend/api/teams.php';
-const AUTH_URL = API_URL;
-const SETTINGS_URL = API_URL;
+const API_URL = API_CONFIG.TEAMS_URL;
+const AUTH_URL = API_CONFIG.AUTH_URL;
+const SETTINGS_URL = API_CONFIG.SETTINGS_URL;
 
 interface Team {
   id: number;

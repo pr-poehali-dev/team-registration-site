@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
-import funcUrls from '../../backend/func2url.json';
+import { API_CONFIG } from '@/config/api';
 import {
   Select,
   SelectContent,
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import TeamEditDialog from '@/components/teams/TeamEditDialog';
 
-const API_URL = funcUrls.teams;
+const API_URL = API_CONFIG.TEAMS_URL;
 
 interface Team {
   id: number;
