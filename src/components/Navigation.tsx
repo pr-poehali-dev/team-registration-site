@@ -24,14 +24,15 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
     <nav className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
       <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 animate-slide-in">
+          <div className="flex items-center gap-1.5 sm:gap-3 animate-slide-in">
             <img 
               src="https://cdn.poehali.dev/files/72fd4a3d-b883-48c1-88db-9039e312d860.png" 
               alt="Go Tournament Logo" 
-              className="w-8 h-8 sm:w-10 sm:h-10 object-contain animate-glow"
+              className="w-7 h-7 sm:w-10 sm:h-10 object-contain flex-shrink-0"
             />
-            <h1 className="text-lg sm:text-2xl font-heading font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Go Tournament
+            <h1 className="text-sm sm:text-2xl font-heading font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent whitespace-nowrap">
+              <span className="sm:hidden">Go T.</span>
+              <span className="hidden sm:inline">Go Tournament</span>
             </h1>
           </div>
           <div className="flex gap-1 sm:gap-2 flex-wrap">
