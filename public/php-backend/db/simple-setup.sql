@@ -1,3 +1,5 @@
+-- ВАЖНО: В phpMyAdmin слева выберите базу ce876244_tournam перед выполнением
+
 CREATE TABLE IF NOT EXISTS teams (
     id INT AUTO_INCREMENT PRIMARY KEY,
     team_name VARCHAR(255) NOT NULL,

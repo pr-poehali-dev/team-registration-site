@@ -3,6 +3,10 @@
 -- Для турнира League of Legends
 -- ====================================
 
+-- ВАЖНО: Выберите вашу базу данных слева в phpMyAdmin
+-- или раскомментируйте и замените название:
+-- USE ce876244_tournam;
+
 -- 1. Таблица команд
 CREATE TABLE IF NOT EXISTS teams (
     id INT AUTO_INCREMENT PRIMARY KEY,

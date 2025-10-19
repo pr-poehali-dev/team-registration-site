@@ -3,6 +3,8 @@
 -- Выполняйте команды по одной в phpMyAdmin
 -- ============================================
 
+-- ВАЖНО: В phpMyAdmin слева выберите базу ce876244_tournam
+
 -- ШАГ 1: Таблица команд
 CREATE TABLE IF NOT EXISTS teams (
     id INT AUTO_INCREMENT PRIMARY KEY,
