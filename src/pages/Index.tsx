@@ -186,19 +186,12 @@ export default function Index() {
 
   const loadTeams = async () => {
     try {
-      const response = await fetch(API_URL);
+      const url = isAdmin ? `${API_URL}?status=all` : API_URL;
+      const response = await fetch(url);
       const data = await response.json();
       setTeams(data.teams || []);
-      toast({
-        title: "Загрузка команд",
-        description: "Данные обновлены",
-      });
     } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить команды",
-        variant: "destructive"
-      });
+      console.error('Failed to load teams:', error);
     }
   };
 
