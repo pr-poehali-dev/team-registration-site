@@ -15,12 +15,13 @@ interface AdminSectionProps {
   onNavigate?: (section: 'teams' | 'register') => void;
   isSuperAdmin?: boolean;
   adminUsername?: string;
+  adminToken?: string;
   isRegistrationOpen?: boolean;
   isLoadingSettings?: boolean;
   onToggleRegistration?: () => void;
 }
 
-export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, adminUsername = '', isRegistrationOpen, isLoadingSettings, onToggleRegistration }: AdminSectionProps) {
+export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, adminUsername = '', adminToken = '', isRegistrationOpen, isLoadingSettings, onToggleRegistration }: AdminSectionProps) {
   const { toast } = useToast();
 
   return (
@@ -78,7 +79,7 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
         <AdminManagement currentUsername={adminUsername} />
       )}
 
-      <MatchManagement />
+      <MatchManagement adminToken={adminToken} />
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="hover:shadow-lg transition-shadow">

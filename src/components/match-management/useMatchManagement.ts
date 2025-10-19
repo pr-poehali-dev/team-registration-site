@@ -5,7 +5,7 @@ import { Match, Team } from './types';
 
 const API_URL = funcUrls.teams;
 
-export function useMatchManagement() {
+export function useMatchManagement(adminToken: string = '') {
   const [matches, setMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -116,6 +116,7 @@ export function useMatchManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           resource: 'bulk_create',
@@ -158,6 +159,7 @@ export function useMatchManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           resource: 'generate_bracket',
@@ -201,6 +203,7 @@ export function useMatchManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           resource: 'clear_bracket',
@@ -244,6 +247,7 @@ export function useMatchManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           resource: 'shuffle_and_generate',
@@ -283,6 +287,7 @@ export function useMatchManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           resource: 'clear_teams',
@@ -327,6 +332,7 @@ export function useMatchManagement() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken,
         },
         body: JSON.stringify({
           resource: 'match',

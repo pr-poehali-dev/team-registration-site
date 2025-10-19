@@ -6,7 +6,11 @@ import MatchEditForm from './match-management/MatchEditForm';
 import MatchManagementActions from './match-management/MatchManagementActions';
 import { useMatchManagement } from './match-management/useMatchManagement';
 
-export default function MatchManagement() {
+interface MatchManagementProps {
+  adminToken?: string;
+}
+
+export default function MatchManagement({ adminToken = '' }: MatchManagementProps) {
   const {
     matches,
     teams,
@@ -32,7 +36,7 @@ export default function MatchManagement() {
     handleClearAllTeams,
 
     handleUpdateMatch,
-  } = useMatchManagement();
+  } = useMatchManagement(adminToken);
 
   if (loading) {
     return (

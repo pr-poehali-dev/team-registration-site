@@ -371,6 +371,7 @@ export default function Index() {
             onNavigate={setActiveSection}
             isSuperAdmin={isSuperAdmin}
             adminUsername={adminUsername}
+            adminToken={adminToken}
             isRegistrationOpen={isRegistrationOpen}
             isLoadingSettings={isLoadingSettings}
             onToggleRegistration={handleToggleRegistration}
