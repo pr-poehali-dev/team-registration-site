@@ -196,7 +196,7 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
         <CardContent>
           <div className="space-y-3">
             {teams.map((team) => {
-              const config = statusConfig[team.current_status];
+              const config = statusConfig[team.current_status || 'waiting'];
               return (
                 <div key={team.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
@@ -213,7 +213,7 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
                     </Badge>
                     
                     <Select
-                      value={team.current_status}
+                      value={team.current_status || 'waiting'}
                       onValueChange={(value) => updateTeamStatus(team.id, value)}
                     >
                       <SelectTrigger className="w-[180px]">
