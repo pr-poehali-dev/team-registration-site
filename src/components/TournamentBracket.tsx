@@ -21,7 +21,10 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
     const team2Won = match.winner === 2;
 
     return (
-      <div className={`bg-card border rounded-lg overflow-hidden min-w-[200px] ${highlight ? 'border-yellow-500 shadow-lg' : ''}`}>
+      <div className={`bg-card border rounded-lg overflow-hidden min-w-[200px] relative ${highlight ? 'border-yellow-500 shadow-lg' : ''}`}>
+        <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md z-10">
+          {match.id}
+        </div>
         <div className={`flex items-center justify-between p-3 border-b ${team1Won ? 'bg-green-500/10' : ''}`}>
           <span className="text-sm font-medium truncate">{match.team1}</span>
           {match.score1 !== undefined && (
