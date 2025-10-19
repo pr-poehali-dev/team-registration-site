@@ -16,11 +16,14 @@ interface BracketProps {
 }
 
 export default function TournamentBracket({ upperMatches, lowerMatches, finals }: BracketProps) {
-  const ByeCard = ({ teamName }: { teamName: string }) => (
+  const ByeCard = ({ teamName, matchId }: { teamName: string; matchId: number }) => (
     <div className="bg-muted/30 border border-dashed rounded-lg min-w-[200px] relative">
+      <div className="absolute -top-2 -left-2 bg-muted text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md z-10">
+        {matchId}
+      </div>
       <div className="p-4 text-center">
-        <div className="text-sm font-medium text-muted-foreground mb-1">{teamName}</div>
-        <Badge variant="secondary" className="text-xs">БАЙ (автопроход)</Badge>
+        <div className="text-sm font-medium mb-2">{teamName}</div>
+        <Badge variant="secondary" className="text-xs">Автопроход в следующий раунд</Badge>
       </div>
     </div>
   );
@@ -55,15 +58,12 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
   };
 
   const Round = ({ matches, title }: { matches: BracketMatch[]; title: string }) => {
-    const items: JSX.Element[] = [];
-    
-    matches.forEach((match) => {
-      if (match.team2 === 'BYE' || match.team2 === 'TBD') {
-        items.push(<ByeCard key={match.id} teamName={match.team1} />);
-      } else {
-        items.push(<MatchCard key={match.id} match={match} />);
-      }
-    });
+    const isByeMatch = (match: BracketMatch) => {
+      const team2Lower = match.team2.toLowerCase();
+      return team2Lower.includes('bye') || 
+             team2Lower.includes('автопроход') || 
+             (match.team2.startsWith('TBD') && match.team1 !== 'TBD');
+    };
 
     return (
       <div className="flex flex-col gap-6 min-w-[220px]">
@@ -71,7 +71,12 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
           <Badge variant="outline">{title}</Badge>
         </div>
         <div className="flex flex-col gap-6">
-          {items}
+          {matches.map((match) => {
+            if (isByeMatch(match)) {
+              return <ByeCard key={match.id} teamName={match.team1} matchId={match.id} />;
+            }
+            return <MatchCard key={match.id} match={match} />;
+          })}
         </div>
       </div>
     );
