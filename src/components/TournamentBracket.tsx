@@ -1,5 +1,15 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import Icon from '@/components/ui/icon';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface BracketMatch {
   id: number;
@@ -14,15 +24,46 @@ interface BracketProps {
   upperMatches: BracketMatch[][];
   lowerMatches: BracketMatch[][];
   finals?: BracketMatch;
+  onUpdateMatch?: (matchId: number, score1: number, score2: number) => void;
+  isEditable?: boolean;
 }
 
-export default function TournamentBracket({ upperMatches, lowerMatches, finals }: BracketProps) {
+export default function TournamentBracket({ upperMatches, lowerMatches, finals, onUpdateMatch, isEditable = false }: BracketProps) {
+  const [editingMatch, setEditingMatch] = useState<BracketMatch | null>(null);
+  const [score1, setScore1] = useState('');
+  const [score2, setScore2] = useState('');
+
+  const handleEditClick = (match: BracketMatch) => {
+    setEditingMatch(match);
+    setScore1(match.score1?.toString() || '');
+    setScore2(match.score2?.toString() || '');
+  };
+
+  const handleSave = () => {
+    if (editingMatch && onUpdateMatch) {
+      const s1 = parseInt(score1) || 0;
+      const s2 = parseInt(score2) || 0;
+      onUpdateMatch(editingMatch.id, s1, s2);
+      setEditingMatch(null);
+    }
+  };
+
   const MatchBox = ({ match, isWinner }: { match: BracketMatch; isWinner?: boolean }) => {
     const team1Won = match.winner === 1;
     const team2Won = match.winner === 2;
 
     return (
-      <div className={`bg-card border rounded-lg overflow-hidden ${isWinner ? 'border-yellow-500 shadow-lg' : 'border-border'}`}>
+      <div 
+        className={`bg-card border rounded-lg overflow-hidden relative group ${isWinner ? 'border-yellow-500 shadow-lg' : 'border-border'} ${isEditable ? 'cursor-pointer hover:border-primary transition-colors' : ''}`}
+        onClick={() => isEditable && handleEditClick(match)}
+      >
+        {isEditable && (
+          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-primary text-primary-foreground rounded p-1">
+              <Icon name="Edit" size={12} />
+            </div>
+          </div>
+        )}
         <div className={`flex items-center justify-between p-2 border-b ${team1Won ? 'bg-green-500/10' : ''}`}>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-xs text-muted-foreground">#{match.id}</span>
@@ -140,7 +181,47 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
   };
 
   return (
-    <div className="space-y-12">
+    <>
+      <Dialog open={!!editingMatch} onOpenChange={() => setEditingMatch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Редактировать матч #{editingMatch?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{editingMatch?.team1}</label>
+              <Input
+                type="number"
+                min="0"
+                value={score1}
+                onChange={(e) => setScore1(e.target.value)}
+                placeholder="Счёт"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{editingMatch?.team2}</label>
+              <Input
+                type="number"
+                min="0"
+                value={score2}
+                onChange={(e) => setScore2(e.target.value)}
+                placeholder="Счёт"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} className="flex-1">
+                <Icon name="Save" size={16} className="mr-2" />
+                Сохранить
+              </Button>
+              <Button variant="outline" onClick={() => setEditingMatch(null)} className="flex-1">
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="space-y-12">
       {upperMatches.length > 0 && (
         <div>
           <div className="mb-4 flex items-center gap-2">
@@ -196,5 +277,6 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
         </div>
       )}
     </div>
+    </>
   );
 }
