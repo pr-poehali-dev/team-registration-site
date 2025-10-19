@@ -274,6 +274,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Генерация турнирной сетки
             if resource == 'generate_bracket':
+                settings = body_data.get('settings', {})
+                bracket_type = settings.get('bracketType', 'double')
+                auto_calculate = settings.get('autoCalculate', True)
+                custom_upper_rounds = settings.get('upperRounds')
+                custom_lower_rounds = settings.get('lowerRounds')
+                has_grand_final = settings.get('hasGrandFinal', True)
+                
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute("""
                         SELECT id, team_name 
@@ -306,7 +313,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     match_num = 1
                     
                     import math
-                    rounds_needed = math.ceil(math.log2(team_count))
+                    
+                    if auto_calculate or custom_upper_rounds is None:
+                        rounds_needed = math.ceil(math.log2(team_count))
+                    else:
+                        rounds_needed = custom_upper_rounds
+                    
+                    if auto_calculate or custom_lower_rounds is None:
+                        lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    else:
+                        lower_rounds = custom_lower_rounds
                     
                     # Создаём матчи первого раунда с реальными командами
                     team_idx = 0
@@ -352,31 +368,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             matches_created += 1
                         previous_round_start = match_num - num_matches
                     
-                    # Нижняя сетка (losers bracket)
-                    lower_rounds = max(1, (rounds_needed - 1) * 2)
-                    for r in range(1, lower_rounds + 1):
-                        if r % 2 == 1:
-                            num_matches = max(1, first_round_matches_count // (2 ** ((r + 1) // 2)))
-                        else:
-                            num_matches = max(1, first_round_matches_count // (2 ** (r // 2 + 1)))
-                        
-                        for m in range(num_matches):
-                            placeholder = f'TBD (Lower R{r})'
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
-                            match_num += 1
-                            matches_created += 1
+                    # Нижняя сетка (losers bracket) - только для double elimination
+                    if bracket_type == 'double' and lower_rounds > 0:
+                        for r in range(1, lower_rounds + 1):
+                            if r % 2 == 1:
+                                num_matches = max(1, first_round_matches_count // (2 ** ((r + 1) // 2)))
+                            else:
+                                num_matches = max(1, first_round_matches_count // (2 ** (r // 2 + 1)))
+                            
+                            for m in range(num_matches):
+                                placeholder = f'TBD (Lower R{r})'
+                                cur.execute("""
+                                    INSERT INTO t_p68536388_team_registration_si.matches 
+                                    (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
+                                match_num += 1
+                                matches_created += 1
                     
-                    # Гранд-финал
-                    cur.execute("""
-                        INSERT INTO t_p68536388_team_registration_si.matches 
-                        (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
-                    matches_created += 1
+                    # Гранд-финал - только для double elimination
+                    if bracket_type == 'double' and has_grand_final:
+                        cur.execute("""
+                            INSERT INTO t_p68536388_team_registration_si.matches 
+                            (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                        """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
+                        matches_created += 1
                     
                     conn.commit()
                 

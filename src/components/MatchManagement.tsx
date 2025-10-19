@@ -63,6 +63,7 @@ export default function MatchManagement({ adminToken = '' }: MatchManagementProp
               clearingBracket={clearingBracket}
               exportingTeams={exportingTeams}
               clearingTeams={clearingTeams}
+              teamCount={teams.filter(t => t.status === 'approved').length}
               onGenerateBracket={handleGenerateBracket}
               onShuffleTeams={handleShuffleTeams}
               onClearBracket={handleClearBracket}

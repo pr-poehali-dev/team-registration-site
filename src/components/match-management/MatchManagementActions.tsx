@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import BracketGenerationDialog, { BracketSettings } from './BracketGenerationDialog';
 
 interface MatchManagementActionsProps {
   generatingBracket: boolean;
@@ -7,7 +9,8 @@ interface MatchManagementActionsProps {
   clearingBracket: boolean;
   exportingTeams: boolean;
   clearingTeams: boolean;
-  onGenerateBracket: () => void;
+  teamCount: number;
+  onGenerateBracket: (settings?: BracketSettings) => void;
   onShuffleTeams: () => void;
   onClearBracket: () => void;
   onToggleBulkCreate: () => void;
@@ -21,6 +24,7 @@ export default function MatchManagementActions({
   clearingBracket,
   exportingTeams,
   clearingTeams,
+  teamCount,
   onGenerateBracket,
   onShuffleTeams,
   onClearBracket,
@@ -28,10 +32,27 @@ export default function MatchManagementActions({
   onExportTeams,
   onClearAllTeams,
 }: MatchManagementActionsProps) {
+  const [showBracketDialog, setShowBracketDialog] = useState(false);
+
+  const handleGenerateClick = () => {
+    setShowBracketDialog(true);
+  };
+
+  const handleGenerateWithSettings = (settings: BracketSettings) => {
+    onGenerateBracket(settings);
+  };
+
   return (
+    <>
     <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+      <BracketGenerationDialog
+        open={showBracketDialog}
+        onClose={() => setShowBracketDialog(false)}
+        onGenerate={handleGenerateWithSettings}
+        teamCount={teamCount}
+      />
       <Button
-        onClick={onGenerateBracket}
+        onClick={handleGenerateClick}
         disabled={generatingBracket}
         variant="default"
         size="sm"
@@ -112,5 +133,6 @@ export default function MatchManagementActions({
         Очистить всё
       </Button>
     </div>
+    </>
   );
 }

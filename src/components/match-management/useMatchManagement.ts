@@ -153,7 +153,12 @@ export function useMatchManagement(adminToken: string = '') {
     }
   };
 
-  const handleGenerateBracket = async () => {
+  const handleGenerateBracket = async (settings?: {
+    upperRounds?: number;
+    lowerRounds?: number;
+    hasGrandFinal?: boolean;
+    bracketType?: 'double' | 'single';
+  }) => {
     setGeneratingBracket(true);
     try {
       const response = await fetch(API_URL, {
@@ -164,6 +169,7 @@ export function useMatchManagement(adminToken: string = '') {
         },
         body: JSON.stringify({
           resource: 'generate_bracket',
+          settings,
         }),
       });
 
