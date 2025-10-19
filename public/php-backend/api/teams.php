@@ -57,8 +57,18 @@ if ($method === 'GET') {
     }
     
     if ($auth_code) {
-        $code_clean = strtoupper(str_replace('-', '', trim($auth_code)));
-        $stmt = $pdo->prepare("SELECT * FROM teams WHERE UPPER(REPLACE(auth_code, '-', '')) = ?");
+        // Убрать все дефисы и пробелы, привести к верхнему регистру
+        $code_clean = strtoupper(str_replace(['-', ' '], '', trim($auth_code)));
+        // Убрать префикс REG если есть
+        if (strpos($code_clean, 'REG') === 0) {
+            $code_clean = substr($code_clean, 3);
+        }
+        
+        // Искать с учетом того что в БД может быть формат REG-XXXX-XXXX или XXXX-XXXX
+        $stmt = $pdo->prepare("
+            SELECT * FROM teams 
+            WHERE REPLACE(REPLACE(REPLACE(UPPER(auth_code), 'REG', ''), '-', ''), ' ', '') = ?
+        ");
         $stmt->execute([$code_clean]);
         $team = $stmt->fetch(PDO::FETCH_ASSOC);
         echo json_encode(['team' => $team, 'success' => $team !== false]);
@@ -105,7 +115,7 @@ elseif ($method === 'POST') {
     }
     
     // Создать команду
-    $auth_code = strtoupper(substr(md5(uniqid(rand(), true)), 0, 4) . '-' . substr(md5(uniqid(rand(), true)), 0, 4));
+    $auth_code = 'REG-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 4) . '-' . substr(md5(uniqid(rand(), true)), 0, 4));
     
     $stmt = $pdo->prepare("
         INSERT INTO teams (team_name, captain_name, captain_telegram, members_count, members_info, auth_code, status)
