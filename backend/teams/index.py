@@ -807,7 +807,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                with conn.cursor() as cur:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        SELECT match_number, bracket_type, round_number, team1_id, team2_id
+                        FROM t_p68536388_team_registration_si.matches 
+                        WHERE id = %s
+                    """, (match_id,))
+                    current_match = cur.fetchone()
+                    
+                    if not current_match:
+                        return {
+                            'statusCode': 404,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({'success': False, 'message': 'Match not found'}),
+                            'isBase64Encoded': False
+                        }
+                    
                     cur.execute("""
                         UPDATE t_p68536388_team_registration_si.matches 
                         SET team1_id = %s, team2_id = %s, 
@@ -828,6 +846,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         body_data.get('scheduled_time'),
                         match_id
                     ))
+                    
+                    winner_id = body_data.get('winner')
+                    if winner_id and body_data.get('status') == 'finished':
+                        match_num = current_match['match_number']
+                        bracket = current_match['bracket_type']
+                        round_num = current_match['round_number']
+                        
+                        cur.execute("""
+                            SELECT id, match_number, team1_placeholder, team2_placeholder
+                            FROM t_p68536388_team_registration_si.matches 
+                            WHERE bracket_type = %s 
+                            AND round_number = %s + 1
+                            AND (team1_placeholder LIKE %s OR team2_placeholder LIKE %s)
+                        """, (bracket, round_num, f'%#{match_num}%', f'%#{match_num}%'))
+                        next_match = cur.fetchone()
+                        
+                        if next_match:
+                            if f'#{match_num}' in next_match['team1_placeholder']:
+                                cur.execute("""
+                                    UPDATE t_p68536388_team_registration_si.matches 
+                                    SET team1_id = %s, team1_placeholder = NULL
+                                    WHERE id = %s
+                                """, (winner_id, next_match['id']))
+                            elif f'#{match_num}' in next_match['team2_placeholder']:
+                                cur.execute("""
+                                    UPDATE t_p68536388_team_registration_si.matches 
+                                    SET team2_id = %s, team2_placeholder = NULL
+                                    WHERE id = %s
+                                """, (winner_id, next_match['id']))
+                    
                     conn.commit()
                 
                 return {
@@ -836,7 +884,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*'
                     },
-                    'body': json.dumps({'success': True, 'message': 'Match updated'}),
+                    'body': json.dumps({'success': True, 'message': 'Match updated and winner promoted'}),
                     'isBase64Encoded': False
                 }
             
