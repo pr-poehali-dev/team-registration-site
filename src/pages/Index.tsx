@@ -109,19 +109,30 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const membersInfo = `TOP: ${formData.top_player} (${formData.top_telegram})
-JUNGLE: ${formData.jungle_player} (${formData.jungle_telegram})
-MID: ${formData.mid_player} (${formData.mid_telegram})
-ADC: ${formData.adc_player} (${formData.adc_telegram})
-SUPPORT: ${formData.support_player} (${formData.support_telegram})
-SUB1: ${formData.sub1_player} (${formData.sub1_telegram})
-SUB2: ${formData.sub2_player} (${formData.sub2_telegram})`;
+    const members = [
+      `Топ: ${formData.top_player} - Телеграм: ${formData.top_telegram}`,
+      `Лес: ${formData.jungle_player} - Телеграм: ${formData.jungle_telegram}`,
+      `Мид: ${formData.mid_player} - Телеграм: ${formData.mid_telegram}`,
+      `АДК: ${formData.adc_player} - Телеграм: ${formData.adc_telegram}`,
+      `Саппорт: ${formData.support_player} - Телеграм: ${formData.support_telegram}`
+    ];
+    
+    // Добавить запасных только если заполнены
+    if (formData.sub1_player && formData.sub1_telegram) {
+      members.push(`Запасной 1: ${formData.sub1_player} - Телеграм: ${formData.sub1_telegram}`);
+    }
+    if (formData.sub2_player && formData.sub2_telegram) {
+      members.push(`Запасной 2: ${formData.sub2_player} - Телеграм: ${formData.sub2_telegram}`);
+    }
+    
+    const membersInfo = members.join('\n');
+    const membersCount = members.length;
     
     const submissionData = {
       team_name: formData.team_name,
       captain_name: formData.captain_name,
       captain_telegram: formData.captain_telegram,
-      members_count: 7,
+      members_count: membersCount,
       members_info: membersInfo
     };
     

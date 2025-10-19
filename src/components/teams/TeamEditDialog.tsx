@@ -18,6 +18,10 @@ interface EditFormData {
   adc_telegram: string;
   support_player: string;
   support_telegram: string;
+  sub1_player: string;
+  sub1_telegram: string;
+  sub2_player: string;
+  sub2_telegram: string;
 }
 
 interface TeamEditDialogProps {
@@ -176,6 +180,48 @@ export default function TeamEditDialog({ isOpen, onClose, editFormData, onFormCh
                   id="edit-support-telegram"
                   value={editFormData.support_telegram}
                   onChange={(e) => onFormChange({ ...editFormData, support_telegram: e.target.value })}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-sub1-player">Запасной 1 (необязательно)</Label>
+                <Input
+                  id="edit-sub1-player"
+                  value={editFormData.sub1_player}
+                  onChange={(e) => onFormChange({ ...editFormData, sub1_player: e.target.value })}
+                  placeholder="Имя игрока"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-sub1-telegram">Telegram запасного 1</Label>
+                <Input
+                  id="edit-sub1-telegram"
+                  value={editFormData.sub1_telegram}
+                  onChange={(e) => onFormChange({ ...editFormData, sub1_telegram: e.target.value })}
+                  placeholder="@username"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-sub2-player">Запасной 2 (необязательно)</Label>
+                <Input
+                  id="edit-sub2-player"
+                  value={editFormData.sub2_player}
+                  onChange={(e) => onFormChange({ ...editFormData, sub2_player: e.target.value })}
+                  placeholder="Имя игрока"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-sub2-telegram">Telegram запасного 2</Label>
+                <Input
+                  id="edit-sub2-telegram"
+                  value={editFormData.sub2_telegram}
+                  onChange={(e) => onFormChange({ ...editFormData, sub2_telegram: e.target.value })}
                   placeholder="@username"
                 />
               </div>

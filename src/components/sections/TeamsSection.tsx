@@ -47,6 +47,10 @@ interface EditFormData {
   adc_telegram: string;
   support_player: string;
   support_telegram: string;
+  sub1_player: string;
+  sub1_telegram: string;
+  sub2_player: string;
+  sub2_telegram: string;
 }
 
 export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChange, onDeleteTeam }: TeamsSectionProps) {
@@ -67,7 +71,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
     adc_player: '',
     adc_telegram: '',
     support_player: '',
-    support_telegram: ''
+    support_telegram: '',
+    sub1_player: '',
+    sub1_telegram: '',
+    sub2_player: '',
+    sub2_telegram: ''
   });
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -155,6 +163,8 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
     const mid = parseRole(lines[2] || '');
     const adc = parseRole(lines[3] || '');
     const support = parseRole(lines[4] || '');
+    const sub1 = parseRole(lines[5] || '');
+    const sub2 = parseRole(lines[6] || '');
 
     setEditFormData({
       team_name: team.team_name,
@@ -169,7 +179,11 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
       adc_player: adc.playerName,
       adc_telegram: adc.telegram,
       support_player: support.playerName,
-      support_telegram: support.telegram
+      support_telegram: support.telegram,
+      sub1_player: sub1.playerName,
+      sub1_telegram: sub1.telegram,
+      sub2_player: sub2.playerName,
+      sub2_telegram: sub2.telegram
     });
 
     setEditingTeam(team);
@@ -179,13 +193,22 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
   const handleSaveEdit = async () => {
     if (!editingTeam) return;
 
-    const membersInfo = [
+    const members = [
       `Топ: ${editFormData.top_player} - Телеграм: ${editFormData.top_telegram}`,
       `Лес: ${editFormData.jungle_player} - Телеграм: ${editFormData.jungle_telegram}`,
       `Мид: ${editFormData.mid_player} - Телеграм: ${editFormData.mid_telegram}`,
       `АДК: ${editFormData.adc_player} - Телеграм: ${editFormData.adc_telegram}`,
       `Саппорт: ${editFormData.support_player} - Телеграм: ${editFormData.support_telegram}`
-    ].join('\n');
+    ];
+    
+    if (editFormData.sub1_player && editFormData.sub1_telegram) {
+      members.push(`Запасной 1: ${editFormData.sub1_player} - Телеграм: ${editFormData.sub1_telegram}`);
+    }
+    if (editFormData.sub2_player && editFormData.sub2_telegram) {
+      members.push(`Запасной 2: ${editFormData.sub2_player} - Телеграм: ${editFormData.sub2_telegram}`);
+    }
+    
+    const membersInfo = members.join('\n');
 
     try {
       const response = await fetch(`https://ce876244.tw1.ru/php-backend/api/teams.php`, {
