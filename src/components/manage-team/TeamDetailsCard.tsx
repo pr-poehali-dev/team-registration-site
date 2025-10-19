@@ -1,17 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import { useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface Team {
   id: number;
@@ -31,7 +20,6 @@ interface TeamDetailsCardProps {
   isRegistrationOpen: boolean;
   onEdit: () => void;
   onCancel: () => void;
-  onResetAll?: () => void;
 }
 
 const formatMembersInfo = (membersInfo: string): string[] => {
@@ -43,20 +31,9 @@ export default function TeamDetailsCard({
   team,
   isRegistrationOpen,
   onEdit,
-  onCancel,
-  onResetAll
+  onCancel
 }: TeamDetailsCardProps) {
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-
-  const handleResetAll = () => {
-    setIsResetDialogOpen(false);
-    if (onResetAll) {
-      onResetAll();
-    }
-  };
-
   return (
-    <>
     <Card className="border-primary/20">
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
@@ -121,40 +98,7 @@ export default function TeamDetailsCard({
             <p className="text-sm text-muted-foreground">{team.admin_comment}</p>
           </div>
         )}
-        
-        {onResetAll && (
-          <div className="mt-6 pt-6 border-t">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => setIsResetDialogOpen(true)}
-              className="w-full border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <Icon name="RotateCcw" size={16} className="mr-2" />
-              Сбросить все данные команды
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
-
-    <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Полный сброс данных команды</AlertDialogTitle>
-          <AlertDialogDescription>
-            Это действие полностью удалит все данные вашей команды из системы, включая код регистрации. 
-            Вы сможете зарегистрироваться заново с новыми данными. Это действие необратимо.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Отмена</AlertDialogCancel>
-          <AlertDialogAction onClick={handleResetAll} className="bg-destructive hover:bg-destructive/90">
-            Да, сбросить все данные
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-    </>
   );
 }
