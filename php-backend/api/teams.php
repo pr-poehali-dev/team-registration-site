@@ -231,11 +231,19 @@ try {
             exit;
         }
         
-        // Update team info and set status to pending for moderation
+        // Get current team status
+        $check_stmt = $pdo->prepare("SELECT status FROM teams WHERE id = ?");
+        $check_stmt->execute([$team_id]);
+        $current_status = $check_stmt->fetchColumn();
+        
+        // Set status to pending only if team was approved before
+        $new_status = ($current_status === 'approved') ? 'pending' : $current_status;
+        
+        // Update team info
         $stmt = $pdo->prepare("
             UPDATE teams 
             SET team_name = ?, captain_name = ?, captain_telegram = ?, 
-                members_info = ?, status = 'pending', updated_at = NOW()
+                members_info = ?, status = ?, updated_at = NOW()
             WHERE id = ?
         ");
         $stmt->execute([
@@ -243,6 +251,7 @@ try {
             $input['captain_name'],
             $input['captain_telegram'],
             $input['members_info'],
+            $new_status,
             $team_id
         ]);
         
@@ -252,11 +261,16 @@ try {
             $admin_stmt = $pdo->query("SELECT telegram_chat_id FROM admin_users WHERE telegram_chat_id IS NOT NULL");
             $admins = $admin_stmt->fetchAll(PDO::FETCH_COLUMN);
             
-            $message = "✏️ <b>Команда отредактирована и отправлена на модерацию</b>\n\n" .
+            $status_text = ($current_status === 'approved') 
+                ? "✏️ <b>Одобренная команда отредактирована - требуется повторная модерация!</b>" 
+                : "✏️ <b>Команда отредактирована</b>";
+                
+            $message = "$status_text\n\n" .
                       "🏆 Команда: {$input['team_name']}\n" .
                       "👤 Капитан: {$input['captain_name']}\n" .
                       "📱 Telegram: {$input['captain_telegram']}\n" .
-                      "🆔 ID команды: $team_id\n\n" .
+                      "🆔 ID команды: $team_id\n" .
+                      "📊 Статус: " . ($new_status === 'pending' ? '⏳ На модерации' : '✅ Одобрена') . "\n\n" .
                       "👥 Новый состав:\n" . ($input['members_info'] ?? 'Не указан');
             
             foreach ($admins as $chat_id) {
