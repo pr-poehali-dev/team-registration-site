@@ -1,3 +1,7 @@
 {
-  "teams": "https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe"
+  "setup-bot": "https://ce876244.tw1.ru/php-backend/api/setup-bot.php",
+  "telegram-bot": "https://ce876244.tw1.ru/php-backend/api/telegram-bot.php",
+  "registration-settings": "https://ce876244.tw1.ru/php-backend/api/registration-settings.php",
+  "admin-auth": "https://ce876244.tw1.ru/php-backend/api/admin-auth.php",
+  "teams": "https://ce876244.tw1.ru/php-backend/api/teams.php"
 }
