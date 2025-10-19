@@ -72,10 +72,16 @@ CREATE TABLE IF NOT EXISTS pending_changes (
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
 
--- ШАГ 7: Добавить настройки по умолчанию
+-- ШАГ 7: Создать индексы для быстрой работы
+CREATE INDEX IF NOT EXISTS idx_telegram_username ON telegram_users(username);
+CREATE INDEX IF NOT EXISTS idx_pending_team ON pending_changes(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_status ON teams(status);
+CREATE INDEX IF NOT EXISTS idx_team_auth_code ON teams(auth_code);
+
+-- ШАГ 8: Добавить настройки по умолчанию
 INSERT IGNORE INTO registration_settings (id, is_open) VALUES (1, TRUE);
 
--- ШАГ 8: Создать администратора (логин: @Rywrxuna, пароль: SmirNova2468)
+-- ШАГ 9: Создать администратора (логин: @Rywrxuna, пароль: SmirNova2468)
 INSERT IGNORE INTO admin_users (username, password_hash, is_superadmin) VALUES ('@Rywrxuna', '7e45e9698d89fc03a9012fa25e87a37ccf7154f623c4a49c1e8df294f30ad7c9', TRUE);
 
 -- ГОТОВО! Проверьте что все таблицы созданы
