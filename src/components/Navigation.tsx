@@ -31,7 +31,8 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
               className="w-7 h-7 sm:w-10 sm:h-10 object-contain flex-shrink-0"
             />
             <h1 className="text-sm sm:text-2xl font-heading font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent whitespace-nowrap">
-              Go Tournament
+              <span className="sm:hidden">Go T.</span>
+              <span className="hidden sm:inline">Go Tournament</span>
             </h1>
           </div>
           <div className="flex gap-1 sm:gap-2 flex-wrap">
