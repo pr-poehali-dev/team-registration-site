@@ -154,6 +154,20 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
     const position = customPositions[match.id];
     const isCustomPositioned = isEditMode && position;
     
+    const getBracketColor = () => {
+      if (match.bracket_type === 'upper') return 'border-blue-200 bg-blue-50/30 hover:border-blue-400';
+      if (match.bracket_type === 'lower') return 'border-orange-200 bg-orange-50/30 hover:border-orange-400';
+      if (match.bracket_type === 'grand_final') return 'border-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50 hover:border-yellow-500 shadow-md';
+      return 'border-gray-200 bg-white hover:border-gray-400';
+    };
+    
+    const getLeftBorderColor = () => {
+      if (match.bracket_type === 'upper') return 'border-l-4 border-l-blue-500';
+      if (match.bracket_type === 'lower') return 'border-l-4 border-l-orange-500';
+      if (match.bracket_type === 'grand_final') return 'border-l-4 border-l-yellow-500';
+      return '';
+    };
+    
     return (
       <div
         key={match.id}
@@ -170,12 +184,12 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
             zIndex: draggedMatch === match.id ? 1000 : 1
           } : {})
         }}
-        className={`border rounded-lg transition-all ${
+        className={`border-2 rounded-lg transition-all ${getLeftBorderColor()} ${
           isEditMode ? 'cursor-move' : 'cursor-pointer'
         } ${
           selectedMatch?.id === match.id
-            ? 'border-primary bg-primary/10 shadow-md'
-            : 'hover:border-primary/50 hover:shadow-sm'
+            ? 'border-primary bg-primary/10 shadow-lg ring-2 ring-primary/20'
+            : getBracketColor()
         } ${
           isCustomPositioned ? 'shadow-lg' : ''
         }`}
@@ -254,12 +268,20 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
 
       <div ref={containerRef} className={isEditMode ? 'relative min-h-[600px]' : ''}>
       {upperRounds.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-primary">Верхняя сетка</h4>
+        <div className="space-y-3 border-2 border-blue-200 rounded-xl p-4 bg-gradient-to-br from-blue-50/50 to-transparent">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+            <Icon name="TrendingUp" size={18} className="text-blue-600" />
+            <h4 className="text-sm font-bold text-blue-700 uppercase tracking-wide">Верхняя сетка</h4>
+            <div className="ml-auto text-xs text-blue-600 font-medium bg-blue-100 px-2 py-1 rounded-full">
+              {upperRounds.length} раунд{upperRounds.length === 1 ? '' : upperRounds.length < 5 ? 'а' : 'ов'}
+            </div>
+          </div>
           <div className={`flex pb-2 ${isEditMode ? '' : 'overflow-x-auto'}`} style={{ gap: `${settings.columnGap}px` }}>
             {upperRounds.map(round => (
               <div key={`upper-${round}`} className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
-                <div className="text-xs font-medium text-muted-foreground sticky top-0 bg-background pb-1">
+                <div className="text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg sticky top-0 shadow-sm border border-blue-200">
+                  <Icon name="Trophy" size={12} className="inline mr-1" />
                   Раунд {round}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
@@ -272,12 +294,20 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
       )}
 
       {lowerRounds.length > 0 && (
-        <div className="space-y-2 border-t pt-4">
-          <h4 className="text-sm font-semibold text-orange-600">Нижняя сетка</h4>
+        <div className="space-y-3 border-2 border-orange-200 rounded-xl p-4 bg-gradient-to-br from-orange-50/50 to-transparent mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
+            <Icon name="TrendingDown" size={18} className="text-orange-600" />
+            <h4 className="text-sm font-bold text-orange-700 uppercase tracking-wide">Нижняя сетка</h4>
+            <div className="ml-auto text-xs text-orange-600 font-medium bg-orange-100 px-2 py-1 rounded-full">
+              {lowerRounds.length} раунд{lowerRounds.length === 1 ? '' : lowerRounds.length < 5 ? 'а' : 'ов'}
+            </div>
+          </div>
           <div className={`flex pb-2 ${isEditMode ? '' : 'overflow-x-auto'}`} style={{ gap: `${settings.columnGap}px` }}>
             {lowerRounds.map(round => (
               <div key={`lower-${round}`} className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
-                <div className="text-xs font-medium text-muted-foreground sticky top-0 bg-background pb-1">
+                <div className="text-xs font-bold text-orange-700 bg-orange-100 px-3 py-1.5 rounded-lg sticky top-0 shadow-sm border border-orange-200">
+                  <Icon name="AlertCircle" size={12} className="inline mr-1" />
                   Раунд {round}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
@@ -290,8 +320,15 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
       )}
 
       {hasGrandFinal && (
-        <div className="space-y-2 border-t pt-4">
-          <h4 className="text-sm font-semibold text-yellow-600">Гранд-финал</h4>
+        <div className="space-y-3 border-2 border-yellow-300 rounded-xl p-4 bg-gradient-to-br from-yellow-50 via-amber-50/50 to-transparent mt-4 shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-6 bg-gradient-to-b from-yellow-400 to-amber-500 rounded-full shadow-md"></div>
+            <Icon name="Crown" size={20} className="text-yellow-600" />
+            <h4 className="text-sm font-bold text-yellow-700 uppercase tracking-wide">Гранд-финал</h4>
+            <div className="ml-auto">
+              <Icon name="Star" size={16} className="text-yellow-500 animate-pulse" />
+            </div>
+          </div>
           <div className="flex" style={{ gap: `${settings.columnGap}px` }}>
             <div className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
