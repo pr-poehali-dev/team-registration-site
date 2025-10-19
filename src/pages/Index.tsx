@@ -8,9 +8,9 @@ import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
 import AdminSection from '@/components/sections/AdminSection';
 import AdminLogin from '@/components/AdminLogin';
-const API_URL = '/php-backend/api/teams.php';
-const AUTH_URL = '/php-backend/api/admin-auth.php';
-const SETTINGS_URL = '/php-backend/api/registration-settings.php';
+const API_URL = 'https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe';
+const AUTH_URL = API_URL;
+const SETTINGS_URL = API_URL;
 
 interface Team {
   id: number;
@@ -43,7 +43,7 @@ export default function Index() {
 
   const loadRegistrationStatus = async () => {
     try {
-      const response = await fetch(SETTINGS_URL);
+      const response = await fetch(`${API_URL}?resource=settings`);
       const data = await response.json();
       setIsRegistrationOpen(data.is_open);
     } catch (error) {
@@ -54,10 +54,11 @@ export default function Index() {
   const handleToggleRegistration = async () => {
     setIsLoadingSettings(true);
     try {
-      const response = await fetch(SETTINGS_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          resource: 'settings',
           is_open: !isRegistrationOpen,
           updated_by: 'admin'
         })
@@ -253,10 +254,10 @@ SUB2: ${formData.sub2_player} (${formData.sub2_telegram})`;
 
   const handleAdminLogin = async (username: string, password: string) => {
     try {
-      const response = await fetch(AUTH_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ resource: 'auth', username, password })
       });
       
       const data = await response.json();
