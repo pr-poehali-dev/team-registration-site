@@ -123,14 +123,45 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
           </div>
           
           <div className="overflow-x-auto pb-6">
-            <div className="inline-flex gap-12 items-start px-4">
+            <div className="inline-flex gap-0 items-start px-4">
               {upperMatches.map((round, idx) => (
-                <Round 
-                  key={idx} 
-                  matches={round} 
-                  roundIndex={idx}
-                  title={idx === upperMatches.length - 1 ? '🏆 Финал верхней сетки' : `Раунд ${idx + 1}`} 
-                />
+                <div key={idx} className="flex items-start">
+                  <Round 
+                    matches={round} 
+                    roundIndex={idx}
+                    title={idx === upperMatches.length - 1 ? '🏆 Финал верхней сетки' : `Раунд ${idx + 1}`} 
+                  />
+                  {idx < upperMatches.length - 1 && (
+                    <div className="flex flex-col justify-around h-full py-16 px-8">
+                      {Array.from({ length: Math.ceil(round.length / 2) }).map((_, lineIdx) => (
+                        <div key={lineIdx} className="relative h-32 flex items-center">
+                          <svg width="80" height="128" className="overflow-visible">
+                            <path
+                              d={`M 0 32 L 40 32 L 40 64 L 80 64`}
+                              stroke="url(#gradient-green)"
+                              strokeWidth="3"
+                              fill="none"
+                              className="drop-shadow-sm"
+                            />
+                            <path
+                              d={`M 0 96 L 40 96 L 40 64 L 80 64`}
+                              stroke="url(#gradient-green)"
+                              strokeWidth="3"
+                              fill="none"
+                              className="drop-shadow-sm"
+                            />
+                            <defs>
+                              <linearGradient id="gradient-green" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="rgb(34 197 94 / 0.3)" />
+                                <stop offset="100%" stopColor="rgb(34 197 94 / 0.8)" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -152,14 +183,45 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
           </div>
           
           <div className="overflow-x-auto pb-6">
-            <div className="inline-flex gap-12 items-start px-4">
+            <div className="inline-flex gap-0 items-start px-4">
               {lowerMatches.map((round, idx) => (
-                <Round 
-                  key={idx} 
-                  matches={round} 
-                  roundIndex={idx}
-                  title={idx === lowerMatches.length - 1 ? '🔥 Финал нижней сетки' : `Раунд ${idx + 1}`} 
-                />
+                <div key={idx} className="flex items-start">
+                  <Round 
+                    matches={round} 
+                    roundIndex={idx}
+                    title={idx === lowerMatches.length - 1 ? '🔥 Финал нижней сетки' : `Раунд ${idx + 1}`} 
+                  />
+                  {idx < lowerMatches.length - 1 && (
+                    <div className="flex flex-col justify-around h-full py-16 px-8">
+                      {Array.from({ length: Math.ceil(round.length / 2) }).map((_, lineIdx) => (
+                        <div key={lineIdx} className="relative h-32 flex items-center">
+                          <svg width="80" height="128" className="overflow-visible">
+                            <path
+                              d={`M 0 32 L 40 32 L 40 64 L 80 64`}
+                              stroke="url(#gradient-orange)"
+                              strokeWidth="3"
+                              fill="none"
+                              className="drop-shadow-sm"
+                            />
+                            <path
+                              d={`M 0 96 L 40 96 L 40 64 L 80 64`}
+                              stroke="url(#gradient-orange)"
+                              strokeWidth="3"
+                              fill="none"
+                              className="drop-shadow-sm"
+                            />
+                            <defs>
+                              <linearGradient id="gradient-orange" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="rgb(249 115 22 / 0.3)" />
+                                <stop offset="100%" stopColor="rgb(249 115 22 / 0.8)" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
