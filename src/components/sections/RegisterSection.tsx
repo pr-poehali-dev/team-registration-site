@@ -37,6 +37,30 @@ interface RegisterSectionProps {
 export default function RegisterSection({ formData, onFormChange, onSubmit, isRegistrationOpen = true, isLoadingSettings = false, onToggleRegistration }: RegisterSectionProps) {
   return (
     <div className="max-w-2xl mx-auto animate-fade-in px-4 space-y-6">
+      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start gap-4">
+          <div className="p-3 bg-blue-500/20 rounded-lg hidden sm:block">
+            <Icon name="Info" size={24} className="text-blue-500" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <h3 className="text-lg font-semibold text-blue-500">Регистрация в турнирном боте</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Для участия в турнире необходимо зарегистрироваться через Telegram бот. 
+              После регистрации вы получите уникальный код, который понадобится для управления командой.
+            </p>
+            <a 
+              href="https://t.me/TournamentWR_bot" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors mt-3"
+            >
+              <Icon name="Send" size={18} />
+              Открыть бота
+            </a>
+          </div>
+        </div>
+      </div>
+
       {onToggleRegistration && (
         <Card>
           <CardContent className="pt-6">

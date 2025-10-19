@@ -255,34 +255,6 @@ export default function ManageTeamSection() {
         </p>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start gap-4">
-          <div className="p-3 bg-blue-500/20 rounded-lg hidden sm:block">
-            <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div className="flex-1 space-y-2">
-            <h3 className="text-lg font-semibold text-blue-500">Регистрация в турнирном боте</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Для участия в турнире необходимо зарегистрироваться через Telegram бот. 
-              После регистрации вы получите уникальный код, который понадобится для управления командой.
-            </p>
-            <a 
-              href="https://t.me/TournamentWR_bot" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors mt-3"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.781-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.155.232.171.326.016.094.037.308.02.475z"/>
-              </svg>
-              Открыть бота
-            </a>
-          </div>
-        </div>
-      </div>
-
       {!isRegistrationOpen && <RegistrationClosedAlert />}
 
       <TeamSearchCard
