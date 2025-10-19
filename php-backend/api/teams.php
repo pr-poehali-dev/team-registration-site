@@ -246,6 +246,39 @@ try {
             $team_id
         ]);
         
+        // Send notification to admins about team edit
+        require_once __DIR__ . '/../config/telegram.php';
+        if (defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
+            $admin_stmt = $pdo->query("SELECT telegram_chat_id FROM admin_users WHERE telegram_chat_id IS NOT NULL");
+            $admins = $admin_stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            $message = "✏️ <b>Команда отредактирована участником</b>\n\n" .
+                      "🏆 Команда: {$input['team_name']}\n" .
+                      "👤 Капитан: {$input['captain_name']}\n" .
+                      "📱 Telegram: {$input['captain_telegram']}\n" .
+                      "🆔 ID команды: $team_id\n\n" .
+                      "👥 Новый состав:\n" . ($input['members_info'] ?? 'Не указан');
+            
+            foreach ($admins as $chat_id) {
+                $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/sendMessage";
+                $data = [
+                    'chat_id' => $chat_id,
+                    'text' => $message,
+                    'parse_mode' => 'HTML'
+                ];
+                
+                $options = [
+                    'http' => [
+                        'method' => 'POST',
+                        'header' => 'Content-Type: application/json',
+                        'content' => json_encode($data)
+                    ]
+                ];
+                
+                @file_get_contents($url, false, stream_context_create($options));
+            }
+        }
+        
         echo json_encode([
             'success' => true,
             'message' => 'Team updated successfully'
