@@ -88,7 +88,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
     );
   };
 
-  const Round = ({ matches, title }: { matches: BracketMatch[]; title: string }) => (
+  const Round = ({ matches, title, roundIndex }: { matches: BracketMatch[]; title: string; roundIndex: number }) => (
     <div className="flex flex-col gap-4 min-w-[260px]">
       <div className="text-center sticky top-0 bg-background/95 backdrop-blur py-2 z-10">
         <Badge variant="outline" className="font-semibold">
@@ -98,7 +98,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
           {matches.length} {matches.length === 1 ? 'матч' : 'матча'}
         </div>
       </div>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6" style={{ marginTop: roundIndex === 1 ? '0' : undefined }}>
         {matches.map((match) => (
           <MatchCard key={match.id} match={match} />
         ))}
@@ -128,6 +128,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
                 <Round 
                   key={idx} 
                   matches={round} 
+                  roundIndex={idx}
                   title={idx === upperMatches.length - 1 ? '🏆 Финал верхней сетки' : `Раунд ${idx + 1}`} 
                 />
               ))}
@@ -156,6 +157,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
                 <Round 
                   key={idx} 
                   matches={round} 
+                  roundIndex={idx}
                   title={idx === lowerMatches.length - 1 ? '🔥 Финал нижней сетки' : `Раунд ${idx + 1}`} 
                 />
               ))}
