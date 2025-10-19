@@ -952,7 +952,64 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
-            # Проверка токена для DELETE операций (админские)
+            params = event.get('queryStringParameters', {})
+            team_id = params.get('id')
+            force_delete = params.get('force') == 'true'
+            reset_all = params.get('reset_all') == 'true'
+            
+            # Reset all teams - только для администратора
+            if reset_all:
+                if not verify_admin_token(event, conn):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+                
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.pending_actions")
+                    cur.execute("DELETE FROM t_p68536388_team_registration_si.teams")
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'All teams deleted successfully'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Force delete - прямое удаление без подтверждения одной команды
+            if force_delete:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        DELETE FROM t_p68536388_team_registration_si.pending_actions
+                        WHERE team_id = %s
+                    """, (int(team_id),))
+                    
+                    cur.execute("""
+                        DELETE FROM t_p68536388_team_registration_si.teams
+                        WHERE id = %s
+                    """, (int(team_id),))
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'Team data completely deleted'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Обычное удаление команды через подтверждение
             if not verify_admin_token(event, conn):
                 return {
                     'statusCode': 401,
@@ -963,10 +1020,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
                     'isBase64Encoded': False
                 }
-            
-            # Удалить команду
-            params = event.get('queryStringParameters', {})
-            team_id = params.get('id')
             
             action_id = create_pending_action(conn, int(team_id), 'delete', {})
             send_confirmation_request(conn, int(team_id), action_id, 'delete', {})

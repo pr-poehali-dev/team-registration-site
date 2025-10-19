@@ -375,6 +375,7 @@ export default function Index() {
             isRegistrationOpen={isRegistrationOpen}
             isLoadingSettings={isLoadingSettings}
             onToggleRegistration={handleToggleRegistration}
+            onTeamsUpdated={loadTeams}
           />
         )}
       </main>
