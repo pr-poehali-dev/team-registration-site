@@ -59,7 +59,7 @@ if ($method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     
     $team_id = $data['team_id'] ?? null;
-    $action = $data['action'] ?? 'change_request'; // change_request, status_update, admin_comment
+    $action = $data['action'] ?? 'change_request'; // change_request, status_update, admin_comment, send_auth_code
     $changes = $data['changes'] ?? [];
     $old_values = $data['old_values'] ?? [];
     $new_status = $data['new_status'] ?? null;
@@ -188,6 +188,23 @@ if ($method === 'POST') {
         
         sendMessage($bot_token, $chat_id, $message);
         echo json_encode(['success' => true, 'message' => 'Comment notification sent']);
+    }
+    
+    elseif ($action === 'send_auth_code') {
+        $message = 
+            "🎉 <b>Команда успешно зарегистрирована!</b>\n\n" .
+            "Название: <b>{$team['team_name']}</b>\n" .
+            "Капитан: <b>{$team['captain_name']}</b>\n\n" .
+            "🔑 <b>Ваш код регистрации:</b>\n" .
+            "<code>{$team['auth_code']}</code>\n\n" .
+            "📋 <b>Что дальше?</b>\n" .
+            "• Сохраните этот код\n" .
+            "• Ожидайте проверки заявки администратором\n" .
+            "• Используйте /myteam для просмотра статуса\n\n" .
+            "Статус: ⏳ На модерации";
+        
+        sendMessage($bot_token, $chat_id, $message);
+        echo json_encode(['success' => true, 'message' => 'Auth code sent to captain']);
     }
     
     else {
