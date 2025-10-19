@@ -187,11 +187,17 @@ export default function TeamsSection({ teams, isAdmin, onLoadTeams, onStatusChan
       `Саппорт: ${editFormData.support_player} - Телеграм: ${editFormData.support_telegram}`
     ].join('\n');
 
+    const API_URL = funcUrls.teams || '/php-backend/api/teams.php';
+    
     try {
-      const response = await fetch(`https://ce876244.tw1.ru/php-backend/api/teams.php`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Token': 'admin'
+        },
         body: JSON.stringify({
+          resource: 'team_edit',
           id: editingTeam.id,
           team_name: editFormData.team_name,
           captain_name: editFormData.captain_name,
