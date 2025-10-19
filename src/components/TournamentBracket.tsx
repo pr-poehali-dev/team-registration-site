@@ -193,7 +193,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
             marginTop: `${topOffset}px`
           }}
         >
-          <div className="text-center -mt-8 my-[6167px]">
+          <div className="text-center mb-2 -mt-8">
             <Badge variant="outline" className="text-xs">
               {isLastRound ? 'Финал' : `Раунд ${roundIdx + 1}`}
             </Badge>
