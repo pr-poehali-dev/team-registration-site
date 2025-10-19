@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import funcUrls from '../../../backend/func2url.json';
+import { API_CONFIG } from '@/config/api';
 import { Match, Team } from './types';
 
-const API_URL = funcUrls.teams;
+const API_URL = API_CONFIG.TEAMS_URL;
 
 export function useMatchManagement() {
   const [matches, setMatches] = useState<Match[]>([]);

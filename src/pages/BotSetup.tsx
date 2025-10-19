@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
-import funcUrls from '../../backend/func2url.json';
 
-const SETUP_URL = funcUrls['setup-bot'];
+const SETUP_URL = '/php-backend/api/setup-bot.php';
 
 interface BotInfo {
   success: boolean;
