@@ -8,11 +8,9 @@ import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
 import AdminSection from '@/components/sections/AdminSection';
 import AdminLogin from '@/components/AdminLogin';
-import funcUrls from '../../backend/func2url.json';
-
-const API_URL = funcUrls.teams;
-const AUTH_URL = funcUrls['admin-auth'];
-const SETTINGS_URL = funcUrls['registration-settings'];
+const API_URL = '/php-backend/api/teams.php';
+const AUTH_URL = '/php-backend/api/admin-auth.php';
+const SETTINGS_URL = '/php-backend/api/registration-settings.php';
 
 interface Team {
   id: number;
