@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import BulkTeamCreate from './match-management/BulkTeamCreate';
 import MatchList from './match-management/MatchList';
-import BracketView from './match-management/BracketView';
+import BracketView from './match-management/BracketViewVertical';
 import MatchEditForm from './match-management/MatchEditForm';
 import MatchManagementActions from './match-management/MatchManagementActions';
 import { useMatchManagement } from './match-management/useMatchManagement';
