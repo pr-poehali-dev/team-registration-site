@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import TeamEditDialog from '@/components/teams/TeamEditDialog';
 
 const API_URL = funcUrls.teams;
 
@@ -22,9 +23,26 @@ interface Team {
   team_name: string;
   captain_name: string;
   captain_telegram: string;
+  members_info?: string;
   current_status: 'waiting' | 'streaming' | 'playing' | 'finished';
   bracket_url?: string;
   status_updated_at?: string;
+}
+
+interface EditFormData {
+  team_name: string;
+  captain_name: string;
+  captain_telegram: string;
+  top_player: string;
+  top_telegram: string;
+  jungle_player: string;
+  jungle_telegram: string;
+  mid_player: string;
+  mid_telegram: string;
+  adc_player: string;
+  adc_telegram: string;
+  support_player: string;
+  support_telegram: string;
 }
 
 interface TeamStatusManagementProps {
@@ -42,6 +60,23 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [bracketUrl, setBracketUrl] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
+    team_name: '',
+    captain_name: '',
+    captain_telegram: '',
+    top_player: '',
+    top_telegram: '',
+    jungle_player: '',
+    jungle_telegram: '',
+    mid_player: '',
+    mid_telegram: '',
+    adc_player: '',
+    adc_telegram: '',
+    support_player: '',
+    support_telegram: ''
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -128,6 +163,88 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
       toast({
         title: "Ошибка",
         description: "Не удалось обновить ссылку",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditTeam = (team: Team) => {
+    const lines = (team.members_info || '').split('\n');
+    const parseRole = (line: string) => {
+      const parts = line.split(' - Телеграм: ');
+      const playerName = parts[0]?.split(': ')[1]?.trim() || '';
+      const telegram = parts[1]?.trim() || '';
+      return { playerName, telegram };
+    };
+
+    const top = parseRole(lines[0] || '');
+    const jungle = parseRole(lines[1] || '');
+    const mid = parseRole(lines[2] || '');
+    const adc = parseRole(lines[3] || '');
+    const support = parseRole(lines[4] || '');
+
+    setEditFormData({
+      team_name: team.team_name,
+      captain_name: team.captain_name,
+      captain_telegram: team.captain_telegram,
+      top_player: top.playerName,
+      top_telegram: top.telegram,
+      jungle_player: jungle.playerName,
+      jungle_telegram: jungle.telegram,
+      mid_player: mid.playerName,
+      mid_telegram: mid.telegram,
+      adc_player: adc.playerName,
+      adc_telegram: adc.telegram,
+      support_player: support.playerName,
+      support_telegram: support.telegram
+    });
+
+    setEditingTeam(team);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTeam) return;
+
+    const membersInfo = [
+      `Топ: ${editFormData.top_player} - Телеграм: ${editFormData.top_telegram}`,
+      `Лес: ${editFormData.jungle_player} - Телеграм: ${editFormData.jungle_telegram}`,
+      `Мид: ${editFormData.mid_player} - Телеграм: ${editFormData.mid_telegram}`,
+      `АДК: ${editFormData.adc_player} - Телеграм: ${editFormData.adc_telegram}`,
+      `Саппорт: ${editFormData.support_player} - Телеграм: ${editFormData.support_telegram}`
+    ].join('\n');
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken
+        },
+        body: JSON.stringify({
+          resource: 'team_edit',
+          id: editingTeam.id,
+          team_name: editFormData.team_name,
+          captain_name: editFormData.captain_name,
+          captain_telegram: editFormData.captain_telegram,
+          members_info: membersInfo
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Команда обновлена",
+          description: "Изменения сохранены"
+        });
+        setIsEditDialogOpen(false);
+        loadTeams();
+      } else {
+        throw new Error('Update failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить команду",
         variant: "destructive"
       });
     }
@@ -246,6 +363,15 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEditTeam(team)}
+                    >
+                      <Icon name="Edit" size={16} className="mr-1" />
+                      Редактировать
+                    </Button>
                   </div>
                 </div>
               );
@@ -261,6 +387,14 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
           )}
         </CardContent>
       </Card>
+
+      <TeamEditDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        editFormData={editFormData}
+        onFormChange={setEditFormData}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }

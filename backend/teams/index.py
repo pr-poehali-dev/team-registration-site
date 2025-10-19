@@ -742,6 +742,46 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
             
+            # Обновить команду (только для админа)
+            if resource == 'team_edit':
+                team_id = body_data.get('id')
+                
+                if not team_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'success': False, 'message': 'Team ID required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE t_p68536388_team_registration_si.teams 
+                        SET team_name = %s, captain_name = %s, captain_telegram = %s, 
+                            members_info = %s, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = %s
+                    """, (
+                        body_data.get('team_name'),
+                        body_data.get('captain_name'),
+                        body_data.get('captain_telegram'),
+                        body_data.get('members_info'),
+                        team_id
+                    ))
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': True, 'message': 'Team updated'}),
+                    'isBase64Encoded': False
+                }
+            
             # Обновить матч
             if resource == 'match':
                 match_id = body_data.get('match_id')
