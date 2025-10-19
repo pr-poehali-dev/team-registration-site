@@ -231,20 +231,68 @@ try {
             exit;
         }
         
-        // Update team info
-        $stmt = $pdo->prepare("
-            UPDATE teams 
-            SET team_name = ?, captain_name = ?, captain_telegram = ?, 
-                members_info = ?, updated_at = NOW()
-            WHERE id = ?
+        // Get current team status and captain chat_id
+        $check_stmt = $pdo->prepare("SELECT status, captain_telegram FROM teams WHERE id = ?");
+        $check_stmt->execute([$team_id]);
+        $team_data = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        $current_status = $team_data['status'];
+        
+        // Get captain's chat_id from telegram_users
+        $captain_telegram_clean = ltrim($input['captain_telegram'], '@');
+        $chat_stmt = $pdo->prepare("SELECT chat_id FROM telegram_users WHERE username = ?");
+        $chat_stmt->execute([$captain_telegram_clean]);
+        $captain_chat_id = $chat_stmt->fetchColumn();
+        
+        // Save changes as pending for captain confirmation
+        $pending_stmt = $pdo->prepare("
+            INSERT INTO pending_team_changes 
+            (team_id, team_name, captain_name, captain_telegram, members_info, captain_chat_id, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')
         ");
-        $stmt->execute([
+        $pending_stmt->execute([
+            $team_id,
             $input['team_name'],
             $input['captain_name'],
             $input['captain_telegram'],
             $input['members_info'],
-            $team_id
+            $captain_chat_id
         ]);
+        
+        $pending_change_id = $pdo->lastInsertId();
+        
+        // Send confirmation request to captain via Telegram
+        require_once __DIR__ . '/../config/telegram.php';
+        if (defined('TELEGRAM_BOT_TOKEN') && TELEGRAM_BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE' && $captain_chat_id) {
+            $message = "✏️ <b>Подтверждение изменений команды</b>\n\n" .
+                      "🏆 Команда: {$input['team_name']}\n" .
+                      "👤 Капитан: {$input['captain_name']}\n" .
+                      "📱 Telegram: {$input['captain_telegram']}\n\n" .
+                      "👥 Новый состав:\n" . ($input['members_info'] ?? 'Не указан') . "\n\n" .
+                      "❗️ Подтвердите изменения, чтобы они были отправлены на модерацию администрации.";
+            
+            $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/sendMessage";
+            $data = [
+                'chat_id' => $captain_chat_id,
+                'text' => $message,
+                'parse_mode' => 'HTML',
+                'reply_markup' => json_encode([
+                    'inline_keyboard' => [[
+                        ['text' => '✅ Подтвердить изменения', 'callback_data' => "confirm_change_$pending_change_id"],
+                        ['text' => '❌ Отменить', 'callback_data' => "cancel_change_$pending_change_id"]
+                    ]]
+                ])
+            ];
+            
+            $options = [
+                'http' => [
+                    'method' => 'POST',
+                    'header' => 'Content-Type: application/json',
+                    'content' => json_encode($data)
+                ]
+            ];
+            
+            @file_get_contents($url, false, stream_context_create($options));
+        }
         
         echo json_encode([
             'success' => true,
