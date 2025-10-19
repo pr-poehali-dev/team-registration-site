@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -25,6 +25,11 @@ try {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
+
+// Обработка PATCH как PUT
+if ($method === 'PATCH') {
+    $method = 'PUT';
+}
 
 // GET - получить команды или найти по коду
 if ($method === 'GET') {
@@ -150,6 +155,9 @@ elseif ($method === 'PUT') {
         $stmt->execute([$data['status'], $data['id']]);
         echo json_encode(['success' => true]);
     } else {
+        // Автоматически подсчитать количество участников
+        $members_count = count(array_filter(explode("\n", $data['members_info'])));
+        
         $stmt = $pdo->prepare("
             UPDATE teams SET team_name = ?, captain_name = ?, captain_telegram = ?, 
                    members_count = ?, members_info = ?
@@ -159,7 +167,7 @@ elseif ($method === 'PUT') {
             $data['team_name'],
             $data['captain_name'],
             $data['captain_telegram'],
-            $data['members_count'],
+            $members_count,
             $data['members_info'],
             $data['id']
         ]);
