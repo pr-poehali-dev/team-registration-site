@@ -25,11 +25,13 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
       <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 animate-slide-in">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center animate-glow">
-              <Icon name="Zap" size={20} className="text-primary-foreground sm:w-6 sm:h-6" />
-            </div>
+            <img 
+              src="https://cdn.poehali.dev/files/72fd4a3d-b883-48c1-88db-9039e312d860.png" 
+              alt="Go Tournament Logo" 
+              className="w-8 h-8 sm:w-10 sm:h-10 object-contain animate-glow"
+            />
             <h1 className="text-lg sm:text-2xl font-heading font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              TeamReg
+              Go Tournament
             </h1>
           </div>
           <div className="flex gap-1 sm:gap-2 flex-wrap">
