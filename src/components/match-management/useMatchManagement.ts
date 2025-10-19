@@ -43,9 +43,10 @@ export function useMatchManagement(adminToken: string = '') {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      setTeams(data);
+      setTeams(data.teams || []);
     } catch (error) {
       console.error('Failed to load teams:', error);
+      setTeams([]);
     }
   };
 
