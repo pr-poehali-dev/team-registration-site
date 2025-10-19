@@ -33,6 +33,7 @@ export default function Index() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
+  const [adminToken, setAdminToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
@@ -58,7 +59,10 @@ export default function Index() {
     try {
       const response = await fetch(SETTINGS_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken
+        },
         body: JSON.stringify({
           is_open: !isRegistrationOpen,
           updated_by: 'admin'
@@ -206,7 +210,10 @@ export default function Index() {
     try {
       const response = await fetch(API_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Admin-Token': adminToken
+        },
         body: JSON.stringify({ id: teamId, status: newStatus })
       });
       
@@ -233,7 +240,10 @@ export default function Index() {
 
     try {
       const response = await fetch(`${API_URL}?id=${teamId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Token': adminToken
+        }
       });
       
       if (response.ok) {
@@ -271,6 +281,7 @@ export default function Index() {
         setIsAuthenticated(true);
         setIsAdmin(true);
         setAdminUsername(data.username || username);
+        setAdminToken(data.token || data.username);
         setIsSuperAdmin(data.is_superadmin || false);
         toast({
           title: "Успешный вход",

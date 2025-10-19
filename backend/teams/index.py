@@ -13,6 +13,25 @@ def generate_auth_code() -> str:
     part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     return f'REG-{part1}-{part2}'
 
+def verify_admin_token(event: Dict[str, Any], conn) -> bool:
+    """Проверяет токен администратора"""
+    headers = event.get('headers', {})
+    admin_token = headers.get('X-Admin-Token', headers.get('x-admin-token', ''))
+    
+    if not admin_token:
+        return False
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT is_active FROM t_p68536388_team_registration_si.admin_users 
+                WHERE username = %s AND is_active = true
+            """, (admin_token,))
+            admin = cur.fetchone()
+            return admin is not None
+    except:
+        return False
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Business: API для управления заявками команд - создание, получение списка, обновление статуса
@@ -182,6 +201,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
+            
+            # Проверка токена для админских операций
+            admin_resources = ['import_teams_list', 'generate_bracket', 'clear_all', 'clear_bracket', 'shuffle_and_generate', 'bulk_create']
+            if resource in admin_resources:
+                if not verify_admin_token(event, conn):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
             
             # Импорт списка команд
             if resource == 'import_teams_list':
@@ -739,6 +772,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise
         
         elif method == 'PUT':
+            # Проверка токена для всех PUT операций (админские)
+            if not verify_admin_token(event, conn):
+                return {
+                    'statusCode': 401,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                    'isBase64Encoded': False
+                }
+            
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
             
@@ -849,6 +894,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
+            # Проверка токена для DELETE операций (админские)
+            if not verify_admin_token(event, conn):
+                return {
+                    'statusCode': 401,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
+                    'isBase64Encoded': False
+                }
+            
             # Удалить команду
             params = event.get('queryStringParameters', {})
             team_id = params.get('id')
