@@ -1,9 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import BulkTeamCreate from './match-management/BulkTeamCreate';
 import MatchList from './match-management/MatchList';
-import BracketView from './match-management/BracketViewVertical';
 import MatchEditForm from './match-management/MatchEditForm';
 import MatchManagementActions from './match-management/MatchManagementActions';
 import { useMatchManagement } from './match-management/useMatchManagement';
@@ -87,50 +85,19 @@ export default function MatchManagement({ adminToken = '' }: MatchManagementProp
             />
           )}
 
-          <Tabs defaultValue="bracket" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="bracket" className="flex items-center gap-2">
-                <Icon name="GitBranch" size={16} />
-                Турнирная сетка
-              </TabsTrigger>
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <Icon name="List" size={16} />
-                Список матчей
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="bracket">
-              <div className="grid md:grid-cols-[2fr,1fr] gap-6">
-                <BracketView
-                  matches={matches}
-                  selectedMatch={selectedMatch}
-                  onSelectMatch={setSelectedMatch}
-                />
-                <MatchEditForm
-                  selectedMatch={selectedMatch}
-                  teams={teams}
-                  onUpdateMatch={setSelectedMatch}
-                  onSubmit={handleUpdateMatch}
-                />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="list">
-              <div className="grid md:grid-cols-2 gap-6">
-                <MatchList
-                  matches={matches}
-                  selectedMatch={selectedMatch}
-                  onSelectMatch={setSelectedMatch}
-                />
-                <MatchEditForm
-                  selectedMatch={selectedMatch}
-                  teams={teams}
-                  onUpdateMatch={setSelectedMatch}
-                  onSubmit={handleUpdateMatch}
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
+          <div className="grid md:grid-cols-2 gap-6">
+            <MatchList
+              matches={matches}
+              selectedMatch={selectedMatch}
+              onSelectMatch={setSelectedMatch}
+            />
+            <MatchEditForm
+              selectedMatch={selectedMatch}
+              teams={teams}
+              onUpdateMatch={setSelectedMatch}
+              onSubmit={handleUpdateMatch}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
