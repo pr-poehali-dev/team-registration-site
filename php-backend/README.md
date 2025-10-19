@@ -65,7 +65,37 @@ https://your-domain.ru/php-backend/api/teams.php
 
 Должен вернуться JSON с командами или пустой массив.
 
+## Настройка Telegram бота
+
+### 1. Получи токен бота
+1. Напиши @BotFather в Telegram
+2. Отправь команду `/newbot`
+3. Следуй инструкциям (название бота, username)
+4. Скопируй полученный токен
+
+### 2. Укажи токен в конфиге
+Открой `config/telegram.php` и замени:
+```php
+define('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE');
+```
+на:
+```php
+define('TELEGRAM_BOT_TOKEN', '123456789:ABCdefGHIjklMNOpqrsTUVwxyz');
+```
+
+### 3. Настрой webhook
+Открой в браузере:
+```
+https://ce876244.tw1.ru/php-backend/api/setup-bot.php
+```
+
+Должен вернуться JSON с `"success": true` и ссылкой на бота.
+
+### 4. Проверь бота
+Напиши боту в Telegram `/start` - он должен ответить приветствием.
+
 ## Требования
 - PHP 7.4 или выше
 - MySQL 5.7 или выше
 - PDO extension (обычно включен по умолчанию)
+- allow_url_fopen = On (для работы с Telegram API)
