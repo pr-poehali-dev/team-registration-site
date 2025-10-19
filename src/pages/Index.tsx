@@ -108,24 +108,20 @@ export default function Index() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const membersInfo = `TOP: ${formData.top_player} (${formData.top_telegram})
+JUNGLE: ${formData.jungle_player} (${formData.jungle_telegram})
+MID: ${formData.mid_player} (${formData.mid_telegram})
+ADC: ${formData.adc_player} (${formData.adc_telegram})
+SUPPORT: ${formData.support_player} (${formData.support_telegram})
+SUB1: ${formData.sub1_player} (${formData.sub1_telegram})
+SUB2: ${formData.sub2_player} (${formData.sub2_telegram})`;
+    
     const submissionData = {
       team_name: formData.team_name,
       captain_name: formData.captain_name,
       captain_telegram: formData.captain_telegram,
-      top_player: formData.top_player,
-      top_telegram: formData.top_telegram,
-      jungle_player: formData.jungle_player,
-      jungle_telegram: formData.jungle_telegram,
-      mid_player: formData.mid_player,
-      mid_telegram: formData.mid_telegram,
-      adc_player: formData.adc_player,
-      adc_telegram: formData.adc_telegram,
-      support_player: formData.support_player,
-      support_telegram: formData.support_telegram,
-      sub1_player: formData.sub1_player,
-      sub1_telegram: formData.sub1_telegram,
-      sub2_player: formData.sub2_player,
-      sub2_telegram: formData.sub2_telegram
+      members_count: 7,
+      members_info: membersInfo
     };
     
     try {
