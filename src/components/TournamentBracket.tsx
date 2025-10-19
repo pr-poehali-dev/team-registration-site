@@ -54,7 +54,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
         <div className={`flex items-center justify-between px-4 py-3 transition-colors ${
           team1Won ? 'bg-green-500/15 border-l-4 border-green-500' : 'border-l-4 border-transparent'
         }`}>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-1 min-w-0 my-0 px-0 py-0 mx-0 rounded-3xl">
             {team1Won && <Icon name="Trophy" size={14} className="text-green-600 flex-shrink-0" />}
             <span className={`text-sm truncate ${team1Won ? 'font-bold' : 'font-medium'}`}>
               {match.team1}
