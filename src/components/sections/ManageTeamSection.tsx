@@ -4,6 +4,7 @@ import { API_CONFIG } from '@/config/api';
 import TeamSearchCard from '@/components/manage-team/TeamSearchCard';
 import TeamDetailsCard from '@/components/manage-team/TeamDetailsCard';
 import EditTeamDialog from '@/components/manage-team/EditTeamDialog';
+import RegistrationClosedAlert from '@/components/manage-team/RegistrationClosedAlert';
 import ConfirmDialog from '@/components/manage-team/ConfirmDialog';
 
 const API_URL = API_CONFIG.TEAMS_URL;
@@ -119,6 +120,15 @@ export default function ManageTeamSection() {
   const handleEditTeam = () => {
     if (!team) return;
 
+    if (!isRegistrationOpen) {
+      toast({
+        title: "Редактирование недоступно",
+        description: "Регистрация завершена. Изменение команд больше не доступно.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const lines = team.members_info.split('\n');
     const parseRole = (line: string) => {
       const parts = line.split(' - Телеграм: ');
@@ -196,6 +206,16 @@ export default function ManageTeamSection() {
 
   const handleCancelRegistration = () => {
     if (!team) return;
+
+    if (!isRegistrationOpen) {
+      toast({
+        title: "Отмена недоступна",
+        description: "Регистрация завершена. Отмена регистрации больше не доступна.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsDeleteConfirmOpen(true);
   };
 
@@ -235,7 +255,7 @@ export default function ManageTeamSection() {
         </p>
       </div>
 
-
+      {!isRegistrationOpen && <RegistrationClosedAlert />}
 
       <TeamSearchCard
         captainTelegram={captainTelegram}
