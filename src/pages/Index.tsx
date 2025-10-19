@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -12,6 +12,7 @@ import funcUrls from '../../backend/func2url.json';
 
 const API_URL = funcUrls.teams;
 const AUTH_URL = funcUrls['admin-auth'];
+const SETTINGS_URL = funcUrls['registration-settings'];
 
 interface Team {
   id: number;
@@ -34,7 +35,55 @@ export default function Index() {
   const [adminUsername, setAdminUsername] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadRegistrationStatus();
+  }, []);
+
+  const loadRegistrationStatus = async () => {
+    try {
+      const response = await fetch(SETTINGS_URL);
+      const data = await response.json();
+      setIsRegistrationOpen(data.is_open);
+    } catch (error) {
+      console.error('Failed to load registration status:', error);
+    }
+  };
+
+  const handleToggleRegistration = async () => {
+    setIsLoadingSettings(true);
+    try {
+      const response = await fetch(SETTINGS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_open: !isRegistrationOpen,
+          updated_by: 'admin'
+        })
+      });
+
+      if (response.ok) {
+        setIsRegistrationOpen(!isRegistrationOpen);
+        toast({
+          title: isRegistrationOpen ? "Регистрация закрыта" : "Регистрация открыта",
+          description: isRegistrationOpen 
+            ? "Капитаны больше не могут редактировать команды" 
+            : "Капитаны могут редактировать свои команды"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось изменить статус регистрации",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingSettings(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     team_name: '',
@@ -281,6 +330,9 @@ export default function Index() {
             formData={formData}
             onFormChange={setFormData}
             onSubmit={handleSubmit}
+            isRegistrationOpen={isRegistrationOpen}
+            isLoadingSettings={isLoadingSettings}
+            onToggleRegistration={isAdmin ? handleToggleRegistration : undefined}
           />
         )}
 
@@ -308,6 +360,9 @@ export default function Index() {
             onNavigate={setActiveSection}
             isSuperAdmin={isSuperAdmin}
             adminUsername={adminUsername}
+            isRegistrationOpen={isRegistrationOpen}
+            isLoadingSettings={isLoadingSettings}
+            onToggleRegistration={handleToggleRegistration}
           />
         )}
       </main>
