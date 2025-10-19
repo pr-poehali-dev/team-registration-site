@@ -115,7 +115,30 @@ elseif ($method === 'POST') {
         $auth_code
     ]);
     
-    echo json_encode(['success' => true, 'auth_code' => $auth_code]);
+    $team_id = $pdo->lastInsertId();
+    
+    // Отправить код регистрации капитану в Telegram
+    $bot_token = '8008657360:AAGUdeZTn_s0YMfB7LjQHSKd0cGXnt5yxds';
+    $notify_url = 'https://ce876244.tw1.ru/php-backend/api/notify-captain.php';
+    
+    $notify_data = [
+        'team_id' => $team_id,
+        'action' => 'send_auth_code'
+    ];
+    
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/json\r\n",
+            'method'  => 'POST',
+            'content' => json_encode($notify_data),
+            'timeout' => 5
+        ]
+    ];
+    
+    $context = stream_context_create($options);
+    @file_get_contents($notify_url, false, $context);
+    
+    echo json_encode(['success' => true, 'auth_code' => $auth_code, 'team_id' => $team_id]);
 }
 
 // PUT - обновить команду или статус
