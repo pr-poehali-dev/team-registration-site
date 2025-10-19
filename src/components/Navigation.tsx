@@ -28,7 +28,7 @@ export default function Navigation({ activeSection, isAdmin, onNavigate, onAdmin
             <img 
               src="https://cdn.poehali.dev/files/72fd4a3d-b883-48c1-88db-9039e312d860.png" 
               alt="Go Tournament Logo" 
-              className="w-8 h-8 sm:w-10 sm:h-10 object-contain animate-glow"
+              className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
             />
             <h1 className="text-lg sm:text-2xl font-heading font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Go Tournament
