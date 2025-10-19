@@ -952,6 +952,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
+            params = event.get('queryStringParameters', {})
+            team_id = params.get('id')
+            force_delete = params.get('force') == 'true'
+            
+            # Force delete - прямое удаление без подтверждения
+            if force_delete:
+                with conn.cursor() as cur:
+                    # Удаляем pending actions для этой команды
+                    cur.execute("""
+                        DELETE FROM t_p68536388_team_registration_si.pending_actions
+                        WHERE team_id = %s
+                    """, (int(team_id),))
+                    
+                    # Удаляем саму команду
+                    cur.execute("""
+                        DELETE FROM t_p68536388_team_registration_si.teams
+                        WHERE id = %s
+                    """, (int(team_id),))
+                    conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'Team data completely deleted'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Обычное удаление через подтверждение
             # Проверка токена для DELETE операций (админские)
             if not verify_admin_token(event, conn):
                 return {
@@ -965,9 +996,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             # Удалить команду
-            params = event.get('queryStringParameters', {})
-            team_id = params.get('id')
-            
             action_id = create_pending_action(conn, int(team_id), 'delete', {})
             send_confirmation_request(conn, int(team_id), action_id, 'delete', {})
             

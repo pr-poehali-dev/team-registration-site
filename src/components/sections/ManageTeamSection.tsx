@@ -246,6 +246,33 @@ export default function ManageTeamSection() {
     }
   };
 
+  const handleResetAllData = async () => {
+    if (!team) return;
+
+    try {
+      const response = await fetch(`${API_URL}?id=${team.id}&force=true`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Данные команды удалены",
+          description: "Все данные вашей команды полностью удалены. Теперь вы можете зарегистрироваться заново."
+        });
+        setTeam(null);
+        setCaptainTelegram('');
+      } else {
+        throw new Error('Force delete failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить данные команды",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
       <div className="text-center space-y-2 sm:space-y-4 px-4">
@@ -270,6 +297,7 @@ export default function ManageTeamSection() {
           isRegistrationOpen={isRegistrationOpen}
           onEdit={handleEditTeam}
           onCancel={handleCancelRegistration}
+          onResetAll={handleResetAllData}
         />
       )}
 
