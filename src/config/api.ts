@@ -2,7 +2,7 @@
 // Переключите USE_TIMEWEB_API в true для использования PHP API на Timeweb
 // Переключите в false для использования backend функций на poehali.dev
 
-const USE_TIMEWEB_API = true;
+const USE_TIMEWEB_API = false;
 
 export const API_CONFIG = {
   TEAMS_URL: USE_TIMEWEB_API 
