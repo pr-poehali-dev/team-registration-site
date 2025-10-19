@@ -136,7 +136,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if auth_code:
                 # Найти команду по коду регистрации
-                code_clean = auth_code.strip().upper().replace('-', '')
+                # Убираем дефисы, пробелы и приводим к верхнему регистру
+                code_clean = auth_code.strip().upper().replace('-', '').replace(' ', '')
+                # Убираем префикс REG если есть
+                if code_clean.startswith('REG'):
+                    code_clean = code_clean[3:]
                 
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute("""
@@ -144,7 +148,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                members_count, members_info, status, admin_comment, 
                                created_at::text, auth_code
                         FROM t_p68536388_team_registration_si.teams 
-                        WHERE UPPER(REPLACE(auth_code, '-', '')) = %s
+                        WHERE REPLACE(REPLACE(REPLACE(UPPER(auth_code), 'REG', ''), '-', ''), ' ', '') = %s
                     """, (code_clean,))
                     team = cur.fetchone()
                 
