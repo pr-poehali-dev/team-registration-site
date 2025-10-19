@@ -298,7 +298,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
             <span className="text-sm text-muted-foreground">Winner Bracket</span>
           </div>
           
-          <div className="overflow-x-auto pb-4">
+          <div className="overflow-x-auto pb-4 rounded-sm">
             <div className="inline-flex">
               {upperMatches.map((round, roundIdx) => (
                 <RoundWithConnectors
