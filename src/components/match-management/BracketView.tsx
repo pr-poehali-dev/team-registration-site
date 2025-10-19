@@ -280,9 +280,9 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
           <div className={`flex pb-2 ${isEditMode ? '' : 'overflow-x-auto'}`} style={{ gap: `${settings.columnGap}px` }}>
             {upperRounds.map(round => (
               <div key={`upper-${round}`} className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
-                <div className="text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg sticky top-0 shadow-sm border border-blue-200">
-                  <Icon name="Trophy" size={12} className="inline mr-1" />
-                  Раунд {round}
+                <div className="text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1.5 rounded-lg sticky top-0 shadow-sm border border-blue-200 flex items-center gap-1">
+                  <Icon name="Trophy" size={12} />
+                  <span>Раунд {round}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
                   {brackets.upper[round].map(match => renderMatch(match))}
@@ -306,9 +306,9 @@ export default function BracketView({ matches, selectedMatch, onSelectMatch }: B
           <div className={`flex pb-2 ${isEditMode ? '' : 'overflow-x-auto'}`} style={{ gap: `${settings.columnGap}px` }}>
             {lowerRounds.map(round => (
               <div key={`lower-${round}`} className="flex flex-col" style={{ gap: `${settings.cardGap}px`, minWidth: `${settings.cardWidth}px` }}>
-                <div className="text-xs font-bold text-orange-700 bg-orange-100 px-3 py-1.5 rounded-lg sticky top-0 shadow-sm border border-orange-200">
-                  <Icon name="AlertCircle" size={12} className="inline mr-1" />
-                  Раунд {round}
+                <div className="text-xs font-bold text-orange-700 bg-orange-100 px-3 py-1.5 rounded-lg sticky top-0 shadow-sm border border-orange-200 flex items-center gap-1">
+                  <Icon name="AlertCircle" size={12} />
+                  <span>Раунд {round}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: `${settings.cardGap}px` }}>
                   {brackets.lower[round].map(match => renderMatch(match))}
