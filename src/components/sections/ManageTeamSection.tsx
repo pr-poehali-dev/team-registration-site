@@ -7,8 +7,8 @@ import EditTeamDialog from '@/components/manage-team/EditTeamDialog';
 import RegistrationClosedAlert from '@/components/manage-team/RegistrationClosedAlert';
 import ConfirmDialog from '@/components/manage-team/ConfirmDialog';
 
-const API_URL = funcUrls.teams;
-const SETTINGS_URL = funcUrls['registration-settings'];
+const API_URL = funcUrls.teams || '/php-backend/api/teams.php';
+const SETTINGS_URL = funcUrls['registration-settings'] || '/php-backend/api/registration-settings.php';
 
 interface Team {
   id: number;

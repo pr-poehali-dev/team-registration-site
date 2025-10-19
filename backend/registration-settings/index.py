@@ -2,8 +2,9 @@ import json
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from typing import Dict, Any
 
-def handler(event: dict, context: any) -> dict:
+def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Business: Manage tournament registration status (open/closed)
     Args: event with httpMethod, body; context with request_id
