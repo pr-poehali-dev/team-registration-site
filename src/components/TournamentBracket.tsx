@@ -16,6 +16,15 @@ interface BracketProps {
 }
 
 export default function TournamentBracket({ upperMatches, lowerMatches, finals }: BracketProps) {
+  const ByeCard = ({ teamName }: { teamName: string }) => (
+    <div className="bg-muted/30 border border-dashed rounded-lg min-w-[200px] relative">
+      <div className="p-4 text-center">
+        <div className="text-sm font-medium text-muted-foreground mb-1">{teamName}</div>
+        <Badge variant="secondary" className="text-xs">БАЙ (автопроход)</Badge>
+      </div>
+    </div>
+  );
+
   const MatchCard = ({ match, highlight = false }: { match: BracketMatch; highlight?: boolean }) => {
     const team1Won = match.winner === 1;
     const team2Won = match.winner === 2;
@@ -45,18 +54,28 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals }
     );
   };
 
-  const Round = ({ matches, title }: { matches: BracketMatch[]; title: string }) => (
-    <div className="flex flex-col gap-6 min-w-[220px]">
-      <div className="text-center">
-        <Badge variant="outline">{title}</Badge>
+  const Round = ({ matches, title }: { matches: BracketMatch[]; title: string }) => {
+    const items: JSX.Element[] = [];
+    
+    matches.forEach((match) => {
+      if (match.team2 === 'BYE' || match.team2 === 'TBD') {
+        items.push(<ByeCard key={match.id} teamName={match.team1} />);
+      } else {
+        items.push(<MatchCard key={match.id} match={match} />);
+      }
+    });
+
+    return (
+      <div className="flex flex-col gap-6 min-w-[220px]">
+        <div className="text-center">
+          <Badge variant="outline">{title}</Badge>
+        </div>
+        <div className="flex flex-col gap-6">
+          {items}
+        </div>
       </div>
-      <div className="flex flex-col gap-6 my-[51px]">
-        {matches.map((match) => (
-          <MatchCard key={match.id} match={match} />
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-12">
