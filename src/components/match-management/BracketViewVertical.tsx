@@ -252,9 +252,9 @@ export default function BracketViewVertical({ matches, selectedMatch, onSelectMa
                 <div key={`upper-${round}`} className="flex items-start">
                   <div className="flex flex-col" style={{ minWidth: `${settings.cardWidth}px` }}>
                     <div className="mb-4 text-center">
-                      <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm border-2 border-blue-300">
+                      <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm border-2 border-blue-300 whitespace-nowrap">
                         <Icon name="Trophy" size={14} />
-                        Этап {round}
+                        <span>Этап {round}</span>
                       </div>
                     </div>
                     <div className="flex flex-col" style={{ gap: `${settings.cardGap}px` }}>
@@ -294,9 +294,9 @@ export default function BracketViewVertical({ matches, selectedMatch, onSelectMa
                 <div key={`lower-${round}`} className="flex items-start">
                   <div className="flex flex-col" style={{ minWidth: `${settings.cardWidth}px` }}>
                     <div className="mb-4 text-center">
-                      <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold text-sm border-2 border-orange-300">
+                      <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold text-sm border-2 border-orange-300 whitespace-nowrap">
                         <Icon name="AlertCircle" size={14} />
-                        Этап {round}
+                        <span>Этап {round}</span>
                       </div>
                     </div>
                     <div className="flex flex-col" style={{ gap: `${settings.cardGap}px` }}>
