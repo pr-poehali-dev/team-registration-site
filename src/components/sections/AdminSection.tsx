@@ -218,7 +218,6 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
                 variant="destructive"
                 size="sm"
                 onClick={() => setIsResetAllDialogOpen(true)}
-                disabled={teams.length === 0}
               >
                 <Icon name="Trash2" className="mr-2 h-4 w-4" />
                 Сбросить все
