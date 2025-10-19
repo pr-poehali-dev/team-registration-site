@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 
 // Конфигурация
-$bot_token = 'ВАШ_ТОКЕН_БОТА'; // ЗАМЕНИ на токен от @BotFather
+$bot_token = '8008657360:AAGUdeZTn_s0YMfB7LjQHSKd0cGXnt5yxds';
 $db_host = 'localhost';
 $db_name = 'ce876244_tournam';
 $db_user = 'ce876244_tournam';

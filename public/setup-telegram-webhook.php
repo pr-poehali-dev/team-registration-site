@@ -2,7 +2,7 @@
 // Скрипт для настройки webhook Telegram бота
 // Запусти ОДИН РАЗ после загрузки telegram-bot.php на хостинг
 
-$bot_token = 'ВАШ_ТОКЕН_БОТА'; // ЗАМЕНИ на токен от @BotFather
+$bot_token = '8008657360:AAGUdeZTn_s0YMfB7LjQHSKd0cGXnt5yxds';
 $webhook_url = 'https://ce876244.tw1.ru/telegram-bot.php'; // URL к telegram-bot.php на хостинге
 
 // Установка webhook
