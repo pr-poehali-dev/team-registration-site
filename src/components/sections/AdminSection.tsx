@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
 import AdminManagement from '@/components/AdminManagement';
+import TeamStatusManagement from '@/components/TeamStatusManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,6 +125,8 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
       {isSuperAdmin && (
         <AdminManagement currentUsername={adminUsername} />
       )}
+
+      <TeamStatusManagement adminToken={adminToken} />
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="hover:shadow-lg transition-shadow">

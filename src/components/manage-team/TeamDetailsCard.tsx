@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 
 interface Team {
@@ -13,6 +14,8 @@ interface Team {
   admin_comment: string;
   created_at: string;
   auth_code?: string;
+  current_status?: 'waiting' | 'streaming' | 'playing' | 'finished';
+  bracket_url?: string;
 }
 
 interface TeamDetailsCardProps {
@@ -70,6 +73,42 @@ export default function TeamDetailsCard({
         </div>
       </CardHeader>
       <CardContent>
+        {team.current_status && (
+          <div className="mb-4 p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium mb-1">Текущий статус</p>
+                <Badge className={`
+                  ${team.current_status === 'waiting' ? 'bg-gray-500' : ''}
+                  ${team.current_status === 'streaming' ? 'bg-purple-500' : ''}
+                  ${team.current_status === 'playing' ? 'bg-green-500' : ''}
+                  ${team.current_status === 'finished' ? 'bg-blue-500' : ''}
+                  text-white
+                `}>
+                  <Icon name={
+                    team.current_status === 'waiting' ? 'Clock' :
+                    team.current_status === 'streaming' ? 'Tv' :
+                    team.current_status === 'playing' ? 'Gamepad2' : 'CheckCircle'
+                  } size={14} className="mr-1" />
+                  {
+                    team.current_status === 'waiting' ? 'Ожидание' :
+                    team.current_status === 'streaming' ? 'На стриме' :
+                    team.current_status === 'playing' ? 'Играют' : 'Завершили'
+                  }
+                </Badge>
+              </div>
+              {team.bracket_url && (
+                <a href={team.bracket_url} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline">
+                    <Icon name="ExternalLink" size={14} className="mr-2" />
+                    Турнирная сетка
+                  </Button>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="text-sm">
             <span className="text-muted-foreground">Telegram капитана:</span>

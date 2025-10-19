@@ -888,6 +888,68 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Обновить current_status команды
+            if resource == 'team_status':
+                team_id = body_data.get('team_id')
+                current_status = body_data.get('current_status')
+                
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        UPDATE t_p68536388_team_registration_si.teams 
+                        SET current_status = %s, status_updated_at = CURRENT_TIMESTAMP
+                        WHERE id = %s
+                        RETURNING captain_telegram, team_name
+                    """, (current_status, team_id))
+                    team = cur.fetchone()
+                    conn.commit()
+                    
+                    # Отправляем уведомление капитану
+                    if team:
+                        send_status_notification(team['captain_telegram'], team['team_name'], current_status)
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'Team status updated'}),
+                    'isBase64Encoded': False
+                }
+            
+            # Обновить bracket_url для всех команд
+            if resource == 'bracket_url':
+                bracket_url = body_data.get('bracket_url')
+                
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("""
+                        UPDATE t_p68536388_team_registration_si.teams 
+                        SET bracket_url = %s
+                    """, (bracket_url,))
+                    
+                    # Получаем всех капитанов
+                    cur.execute("""
+                        SELECT captain_telegram, team_name 
+                        FROM t_p68536388_team_registration_si.teams
+                        WHERE status = 'approved'
+                    """)
+                    teams = cur.fetchall()
+                    conn.commit()
+                    
+                    # Отправляем уведомления
+                    for team in teams:
+                        send_bracket_url_notification(team['captain_telegram'], team['team_name'], bracket_url)
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'message': 'Bracket URL updated'}),
+                    'isBase64Encoded': False
+                }
+            
             # Обновить статус команды (только для админа)
             team_id = body_data.get('id')
             new_status = body_data.get('status')
@@ -1135,6 +1197,107 @@ def send_message_with_keyboard(bot_token: str, chat_id: int, text: str, keyboard
         'text': text,
         'parse_mode': 'HTML',
         'reply_markup': keyboard
+    }
+    
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode('utf-8'),
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except Exception as e:
+        print(f"Failed to send message: {str(e)}")
+        return None
+
+def send_status_notification(captain_telegram: str, team_name: str, status: str):
+    try:
+        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token or not captain_telegram:
+            return
+        
+        if not captain_telegram.startswith('@'):
+            return
+        
+        username = captain_telegram[1:]
+        
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg.connect(dsn)
+        
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT chat_id FROM t_p68536388_team_registration_si.telegram_users 
+                WHERE username = %s
+            """, (username,))
+            user = cur.fetchone()
+        
+        conn.close()
+        
+        if not user:
+            return
+        
+        status_messages = {
+            'waiting': '⏳ Ожидание - Готовьтесь к матчу',
+            'streaming': '📺 На стриме - Ваша команда сейчас в эфире!',
+            'playing': '🎮 Играют - Удачи в игре!',
+            'finished': '✅ Завершили - Спасибо за участие!'
+        }
+        
+        message = (
+            f"🏆 <b>Обновление статуса команды</b>\n\n"
+            f"Команда: {team_name}\n"
+            f"Статус: {status_messages.get(status, status)}\n"
+        )
+        
+        send_simple_message(bot_token, user['chat_id'], message)
+    except Exception as e:
+        print(f"Failed to send status notification: {str(e)}")
+
+def send_bracket_url_notification(captain_telegram: str, team_name: str, bracket_url: str):
+    try:
+        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token or not captain_telegram:
+            return
+        
+        if not captain_telegram.startswith('@'):
+            return
+        
+        username = captain_telegram[1:]
+        
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg.connect(dsn)
+        
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT chat_id FROM t_p68536388_team_registration_si.telegram_users 
+                WHERE username = %s
+            """, (username,))
+            user = cur.fetchone()
+        
+        conn.close()
+        
+        if not user:
+            return
+        
+        message = (
+            f"🎯 <b>Турнирная сетка обновлена!</b>\n\n"
+            f"Команда: {team_name}\n"
+            f"Ссылка: {bracket_url}\n\n"
+            f"Следите за расписанием ваших матчей!"
+        )
+        
+        send_simple_message(bot_token, user['chat_id'], message)
+    except Exception as e:
+        print(f"Failed to send bracket URL notification: {str(e)}")
+
+def send_simple_message(bot_token: str, chat_id: int, text: str):
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    data = {
+        'chat_id': chat_id,
+        'text': text,
+        'parse_mode': 'HTML'
     }
     
     req = urllib.request.Request(
