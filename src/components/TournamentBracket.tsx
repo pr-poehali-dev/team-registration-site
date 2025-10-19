@@ -34,7 +34,6 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
   const [draggedMatch, setDraggedMatch] = useState<BracketMatch | null>(null);
-  const dragCounter = useRef(0);
 
   const handleEditClick = (match: BracketMatch) => {
     setEditingMatch(match);
@@ -67,7 +66,6 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
       if (!isEditable || !draggedMatch || draggedMatch.id === match.id) return;
       e.preventDefault();
       e.stopPropagation();
-      dragCounter.current++;
       setIsDragOver(true);
     };
 
@@ -75,10 +73,7 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
       if (!isEditable) return;
       e.preventDefault();
       e.stopPropagation();
-      dragCounter.current--;
-      if (dragCounter.current === 0) {
-        setIsDragOver(false);
-      }
+      setIsDragOver(false);
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -92,7 +87,6 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
       if (!isEditable || !draggedMatch || draggedMatch.id === match.id) return;
       e.preventDefault();
       e.stopPropagation();
-      dragCounter.current = 0;
       setIsDragOver(false);
       
       if (onSwapMatches) {
@@ -104,7 +98,6 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
     const handleDragEnd = () => {
       setDraggedMatch(null);
       setIsDragOver(false);
-      dragCounter.current = 0;
     };
 
     return (
