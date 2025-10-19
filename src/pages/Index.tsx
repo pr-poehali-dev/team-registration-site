@@ -8,11 +8,9 @@ import ScheduleSection from '@/components/sections/ScheduleSection';
 import ManageTeamSection from '@/components/sections/ManageTeamSection';
 import AdminSection from '@/components/sections/AdminSection';
 import AdminLogin from '@/components/AdminLogin';
-import funcUrls from '@/../backend/func2url.json';
-
-const API_URL = funcUrls.teams || '/php-backend/api/teams.php';
-const AUTH_URL = funcUrls['admin-auth'] || '/php-backend/api/admin-auth.php';
-const SETTINGS_URL = funcUrls['registration-settings'] || '/php-backend/api/registration-settings.php';
+const API_URL = '/php-backend/api/teams.php';
+const AUTH_URL = '/php-backend/api/admin-auth.php';
+const SETTINGS_URL = '/php-backend/api/registration-settings.php';
 
 interface Team {
   id: number;
@@ -46,16 +44,10 @@ export default function Index() {
   const loadRegistrationStatus = async () => {
     try {
       const response = await fetch(SETTINGS_URL);
-      if (!response.ok) {
-        console.warn('Registration settings not available, using default');
-        setIsRegistrationOpen(true);
-        return;
-      }
       const data = await response.json();
       setIsRegistrationOpen(data.is_open);
     } catch (error) {
       console.error('Failed to load registration status:', error);
-      setIsRegistrationOpen(true);
     }
   };
 

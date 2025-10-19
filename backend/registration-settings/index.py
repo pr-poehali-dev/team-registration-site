@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: dict, context: any) -> dict:
     '''
-    Business: Tournament registration settings management
+    Business: Manage tournament registration status (open/closed)
     Args: event with httpMethod, body; context with request_id
     Returns: HTTP response with registration status
     '''

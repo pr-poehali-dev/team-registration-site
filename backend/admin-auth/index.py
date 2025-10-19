@@ -7,9 +7,9 @@ import hashlib
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Admin authentication and management
-    Args: event with httpMethod, body with username and password; context with request_id
-    Returns: HTTP response with operation result
+    Business: Управление администраторами - авторизация, получение списка, удаление
+    Args: event с httpMethod, body с username и password; context с request_id
+    Returns: HTTP response с результатом операции
     '''
     method: str = event.get('httpMethod', 'POST')
     
