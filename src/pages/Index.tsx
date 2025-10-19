@@ -172,10 +172,20 @@ export default function Index() {
           sub2_telegram: ''
         });
       } else {
-        const errorData = await response.json();
+        let errorMessage = "Не удалось отправить заявку";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // Если не удалось распарсить JSON, используем статус
+          if (response.status === 409) {
+            errorMessage = "Вы уже зарегистрировали команду. Один человек может зарегистрировать только одну команду.";
+          }
+        }
+        
         toast({
-          title: "Ошибка",
-          description: errorData.error || "Не удалось отправить заявку",
+          title: "Ошибка регистрации",
+          description: errorMessage,
           variant: "destructive"
         });
       }
