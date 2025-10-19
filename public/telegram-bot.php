@@ -29,7 +29,7 @@ function sendMessage($bot_token, $chat_id, $text, $parse_mode = 'HTML', $reply_m
     ];
     
     if ($reply_markup) {
-        $data['reply_markup'] = json_encode($reply_markup);
+        $data['reply_markup'] = $reply_markup;
     }
     
     $options = [
@@ -45,6 +45,50 @@ function sendMessage($bot_token, $chat_id, $text, $parse_mode = 'HTML', $reply_m
     return json_decode($result, true);
 }
 
+// Функция для ответа на callback запрос
+function answerCallbackQuery($bot_token, $callback_query_id, $text = null) {
+    $url = "https://api.telegram.org/bot{$bot_token}/answerCallbackQuery";
+    
+    $data = ['callback_query_id' => $callback_query_id];
+    if ($text) {
+        $data['text'] = $text;
+    }
+    
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/json\r\n",
+            'method'  => 'POST',
+            'content' => json_encode($data)
+        ]
+    ];
+    
+    $context = stream_context_create($options);
+    file_get_contents($url, false, $context);
+}
+
+// Функция для редактирования сообщения
+function editMessage($bot_token, $chat_id, $message_id, $text, $parse_mode = 'HTML') {
+    $url = "https://api.telegram.org/bot{$bot_token}/editMessageText";
+    
+    $data = [
+        'chat_id' => $chat_id,
+        'message_id' => $message_id,
+        'text' => $text,
+        'parse_mode' => $parse_mode
+    ];
+    
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/json\r\n",
+            'method'  => 'POST',
+            'content' => json_encode($data)
+        ]
+    ];
+    
+    $context = stream_context_create($options);
+    file_get_contents($url, false, $context);
+}
+
 // Генерация кода регистрации
 function generateAuthCode() {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -53,9 +97,99 @@ function generateAuthCode() {
     return "REG-{$part1}-{$part2}";
 }
 
+// Получить chat_id капитана по telegram username
+function getCaptainChatId($pdo, $captain_telegram) {
+    $stmt = $pdo->prepare("SELECT chat_id FROM telegram_users WHERE username = ?");
+    $username_clean = str_replace('@', '', $captain_telegram);
+    $stmt->execute([$username_clean]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ? $result['chat_id'] : null;
+}
+
 // Получение входящего обновления от Telegram
 $content = file_get_contents('php://input');
 $update = json_decode($content, true);
+
+// Обработка callback кнопок
+if (isset($update['callback_query'])) {
+    $callback = $update['callback_query'];
+    $callback_data = $callback['data'];
+    $chat_id = $callback['message']['chat']['id'];
+    $message_id = $callback['message']['message_id'];
+    $telegram_username = $callback['from']['username'] ?? '';
+    
+    // Формат: approve_change_TEAMID или reject_change_TEAMID
+    if (strpos($callback_data, 'approve_change_') === 0) {
+        $team_id = str_replace('approve_change_', '', $callback_data);
+        
+        // Проверить что это капитан команды
+        $stmt = $pdo->prepare("SELECT * FROM teams WHERE id = ? AND captain_telegram = ?");
+        $stmt->execute([$team_id, "@{$telegram_username}"]);
+        $team = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($team) {
+            // Применить изменения из pending_changes
+            $stmt = $pdo->prepare("SELECT * FROM pending_changes WHERE team_id = ? ORDER BY created_at DESC LIMIT 1");
+            $stmt->execute([$team_id]);
+            $pending = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($pending) {
+                $changes = json_decode($pending['changes'], true);
+                
+                // Обновить команду
+                $update_fields = [];
+                $update_values = [];
+                foreach ($changes as $field => $value) {
+                    $update_fields[] = "$field = ?";
+                    $update_values[] = $value;
+                }
+                $update_values[] = $team_id;
+                
+                $sql = "UPDATE teams SET " . implode(', ', $update_fields) . " WHERE id = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($update_values);
+                
+                // Удалить pending change
+                $stmt = $pdo->prepare("DELETE FROM pending_changes WHERE id = ?");
+                $stmt->execute([$pending['id']]);
+                
+                answerCallbackQuery($bot_token, $callback['id'], "✅ Изменения применены!");
+                editMessage($bot_token, $chat_id, $message_id,
+                    "✅ <b>Изменения подтверждены и применены!</b>\n\n" .
+                    "Используйте /myteam чтобы посмотреть обновлённую информацию."
+                );
+            }
+        } else {
+            answerCallbackQuery($bot_token, $callback['id'], "❌ Вы не капитан этой команды");
+        }
+    }
+    
+    elseif (strpos($callback_data, 'reject_change_') === 0) {
+        $team_id = str_replace('reject_change_', '', $callback_data);
+        
+        // Проверить что это капитан команды
+        $stmt = $pdo->prepare("SELECT * FROM teams WHERE id = ? AND captain_telegram = ?");
+        $stmt->execute([$team_id, "@{$telegram_username}"]);
+        $team = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($team) {
+            // Удалить pending change
+            $stmt = $pdo->prepare("DELETE FROM pending_changes WHERE team_id = ?");
+            $stmt->execute([$team_id]);
+            
+            answerCallbackQuery($bot_token, $callback['id'], "❌ Изменения отклонены");
+            editMessage($bot_token, $chat_id, $message_id,
+                "❌ <b>Изменения отклонены</b>\n\n" .
+                "Данные команды остались без изменений."
+            );
+        } else {
+            answerCallbackQuery($bot_token, $callback['id'], "❌ Вы не капитан этой команды");
+        }
+    }
+    
+    echo json_encode(['ok' => true]);
+    exit;
+}
 
 if (!$update || !isset($update['message'])) {
     echo json_encode(['ok' => true]);
@@ -68,14 +202,25 @@ $text = $message['text'] ?? '';
 $telegram_username = $message['from']['username'] ?? '';
 $first_name = $message['from']['first_name'] ?? '';
 
+// Сохранить chat_id пользователя
+if ($telegram_username) {
+    $stmt = $pdo->prepare(
+        "INSERT INTO telegram_users (username, chat_id, first_name, updated_at) 
+         VALUES (?, ?, ?, NOW()) 
+         ON DUPLICATE KEY UPDATE chat_id = ?, first_name = ?, updated_at = NOW()"
+    );
+    $stmt->execute([$telegram_username, $chat_id, $first_name, $chat_id, $first_name]);
+}
+
 // Обработка команд
 if (strpos($text, '/start') === 0) {
     sendMessage($bot_token, $chat_id,
         "👋 Привет! Я бот для регистрации команд на турнир.\n\n" .
-        "Доступные команды:\n" .
+        "📋 <b>Доступные команды:</b>\n\n" .
         "/register - Регистрация команды\n" .
         "/myteam - Информация о вашей команде\n" .
-        "/help - Помощь"
+        "/cancel - Отменить регистрацию\n" .
+        "/help - Показать все команды"
     );
 }
 
@@ -85,7 +230,11 @@ elseif (strpos($text, '/help') === 0) {
         "/register - Регистрация новой команды\n" .
         "/myteam - Информация о вашей команде\n" .
         "/cancel - Отменить регистрацию\n" .
-        "/help - Показать это сообщение"
+        "/help - Показать это сообщение\n\n" .
+        "ℹ️ Вам будут приходить уведомления о:\n" .
+        "• Изменении статуса заявки\n" .
+        "• Запросах на изменение данных команды\n" .
+        "• Комментариях администратора"
     );
 }
 
