@@ -137,7 +137,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text, auth_code
+                               created_at::text, auth_code, current_status, bracket_url
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE captain_telegram = %s
                     """, (captain_telegram,))
@@ -161,7 +161,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text, auth_code
+                               created_at::text, auth_code, current_status, bracket_url
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE UPPER(REPLACE(auth_code, '-', '')) = %s
                     """, (code_clean,))
@@ -178,14 +178,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             else:
                 # Получить список всех команд
+                status_filter = params.get('status', 'approved')
+                
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
-                        SELECT id, team_name, captain_name, captain_telegram, 
-                               members_count, members_info, status, admin_comment, 
-                               created_at::text
-                        FROM t_p68536388_team_registration_si.teams 
-                        ORDER BY created_at DESC
-                    """)
+                    if status_filter == 'all':
+                        cur.execute("""
+                            SELECT id, team_name, captain_name, captain_telegram, 
+                                   members_count, members_info, status, admin_comment, 
+                                   created_at::text, current_status, bracket_url, 
+                                   status_updated_at::text
+                            FROM t_p68536388_team_registration_si.teams 
+                            ORDER BY created_at DESC
+                        """)
+                    else:
+                        cur.execute("""
+                            SELECT id, team_name, captain_name, captain_telegram, 
+                                   members_count, members_info, status, admin_comment, 
+                                   created_at::text, current_status, bracket_url, 
+                                   status_updated_at::text
+                            FROM t_p68536388_team_registration_si.teams 
+                            WHERE status = %s
+                            ORDER BY created_at DESC
+                        """, (status_filter,))
                     teams = cur.fetchall()
                 
                 return {

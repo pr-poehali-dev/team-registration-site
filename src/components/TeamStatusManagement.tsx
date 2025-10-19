@@ -50,7 +50,7 @@ export default function TeamStatusManagement({ adminToken }: TeamStatusManagemen
 
   const loadTeams = async () => {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(`${API_URL}?status=all`);
       const data = await response.json();
       setTeams(data.teams || []);
       
