@@ -6,22 +6,22 @@
       "path": "/",
       "expectedStatus": 200,
       "expectedBody": {
-        "is_open": true
+        "is_open": "boolean"
       },
       "bodyMatcher": "partial"
     },
     {
-      "name": "Update registration status requires auth",
+      "name": "Update registration status",
       "method": "POST",
       "path": "/",
       "body": {
         "is_open": false,
         "updated_by": "test_admin"
       },
-      "expectedStatus": 401,
+      "expectedStatus": 200,
       "expectedBody": {
-        "success": false,
-        "message": "Unauthorized"
+        "message": "string",
+        "is_open": false
       },
       "bodyMatcher": "partial"
     }

@@ -33,7 +33,6 @@ export default function Index() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
-  const [adminToken, setAdminToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
@@ -43,10 +42,6 @@ export default function Index() {
   useEffect(() => {
     loadRegistrationStatus();
   }, []);
-
-  useEffect(() => {
-    loadTeams();
-  }, [isAdmin]);
 
   const loadRegistrationStatus = async () => {
     try {
@@ -63,10 +58,7 @@ export default function Index() {
     try {
       const response = await fetch(SETTINGS_URL, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           is_open: !isRegistrationOpen,
           updated_by: 'admin'
@@ -176,20 +168,10 @@ export default function Index() {
           sub2_telegram: ''
         });
       } else {
-        let errorMessage = "Не удалось отправить заявку";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          // Если не удалось распарсить JSON, используем статус
-          if (response.status === 409) {
-            errorMessage = "Вы уже зарегистрировали команду. Один человек может зарегистрировать только одну команду.";
-          }
-        }
-        
+        const errorData = await response.json();
         toast({
-          title: "Ошибка регистрации",
-          description: errorMessage,
+          title: "Ошибка",
+          description: errorData.error || "Не удалось отправить заявку",
           variant: "destructive"
         });
       }
@@ -204,10 +186,13 @@ export default function Index() {
 
   const loadTeams = async () => {
     try {
-      const url = isAdmin ? `${API_URL}?status=all` : API_URL;
-      const response = await fetch(url);
+      const response = await fetch(API_URL);
       const data = await response.json();
       setTeams(data.teams || []);
+      toast({
+        title: "Загрузка команд",
+        description: "Данные обновлены",
+      });
     } catch (error) {
       toast({
         title: "Ошибка",
@@ -221,10 +206,7 @@ export default function Index() {
     try {
       const response = await fetch(API_URL, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Token': adminToken
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: teamId, status: newStatus })
       });
       
@@ -251,10 +233,7 @@ export default function Index() {
 
     try {
       const response = await fetch(`${API_URL}?id=${teamId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Admin-Token': adminToken
-        }
+        method: 'DELETE'
       });
       
       if (response.ok) {
@@ -292,13 +271,11 @@ export default function Index() {
         setIsAuthenticated(true);
         setIsAdmin(true);
         setAdminUsername(data.username || username);
-        setAdminToken(data.token || data.username);
         setIsSuperAdmin(data.is_superadmin || false);
         toast({
           title: "Успешный вход",
           description: "Добро пожаловать в админ-панель",
         });
-        loadTeams();
       } else {
         toast({
           title: "Ошибка",
@@ -383,11 +360,9 @@ export default function Index() {
             onNavigate={setActiveSection}
             isSuperAdmin={isSuperAdmin}
             adminUsername={adminUsername}
-            adminToken={adminToken}
             isRegistrationOpen={isRegistrationOpen}
             isLoadingSettings={isLoadingSettings}
             onToggleRegistration={handleToggleRegistration}
-            onTeamsUpdated={loadTeams}
           />
         )}
       </main>

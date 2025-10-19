@@ -6,70 +6,22 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import funcUrls from '../../../backend/func2url.json';
 import AdminManagement from '@/components/AdminManagement';
-import TeamStatusManagement from '@/components/TeamStatusManagement';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import MatchManagement from '@/components/MatchManagement';
 
 const SETTINGS_URL = funcUrls['registration-settings'];
-const TEAMS_URL = funcUrls.teams;
 
 interface AdminSectionProps {
   teams: { status: string }[];
   onNavigate?: (section: 'teams' | 'register') => void;
   isSuperAdmin?: boolean;
   adminUsername?: string;
-  adminToken?: string;
   isRegistrationOpen?: boolean;
   isLoadingSettings?: boolean;
   onToggleRegistration?: () => void;
-  onTeamsUpdated?: () => void;
 }
 
-export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, adminUsername = '', adminToken = '', isRegistrationOpen, isLoadingSettings, onToggleRegistration, onTeamsUpdated }: AdminSectionProps) {
+export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, adminUsername = '', isRegistrationOpen, isLoadingSettings, onToggleRegistration }: AdminSectionProps) {
   const { toast } = useToast();
-  const [isResetAllDialogOpen, setIsResetAllDialogOpen] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-
-  const handleResetAllTeams = async () => {
-    setIsResetting(true);
-    try {
-      const response = await fetch(`${TEAMS_URL}?reset_all=true`, {
-        method: 'DELETE',
-        headers: {
-          'X-Admin-Token': adminToken
-        }
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Все команды удалены",
-          description: "Все данные команд полностью удалены из системы."
-        });
-        setIsResetAllDialogOpen(false);
-        if (onTeamsUpdated) {
-          onTeamsUpdated();
-        }
-      } else {
-        throw new Error('Reset failed');
-      }
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось удалить команды",
-        variant: "destructive"
-      });
-    } finally {
-      setIsResetting(false);
-    }
-  };
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
@@ -126,7 +78,7 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
         <AdminManagement currentUsername={adminUsername} />
       )}
 
-      <TeamStatusManagement adminToken={adminToken} />
+      <MatchManagement />
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="hover:shadow-lg transition-shadow">
@@ -194,67 +146,6 @@ export default function AdminSection({ teams, onNavigate, isSuperAdmin = false, 
           </CardContent>
         </Card>
       </div>
-
-      <Card className="border-destructive/50 mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <Icon name="AlertTriangle" className="h-6 w-6" />
-            Опасная зона
-          </CardTitle>
-          <CardDescription>
-            Необратимые действия, которые могут повлиять на все данные
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-destructive/30 rounded-lg bg-destructive/5">
-              <div>
-                <p className="font-medium text-sm">Сброс всех команд</p>
-                <p className="text-xs text-muted-foreground">
-                  Полностью удалить все команды из системы ({teams.length} {teams.length === 1 ? 'команда' : 'команд'})
-                </p>
-              </div>
-              <Button 
-                variant="destructive"
-                size="sm"
-                onClick={() => setIsResetAllDialogOpen(true)}
-              >
-                <Icon name="Trash2" className="mr-2 h-4 w-4" />
-                Сбросить все
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <AlertDialog open={isResetAllDialogOpen} onOpenChange={setIsResetAllDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить все команды?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Это действие полностью удалит {teams.length} {teams.length === 1 ? 'команду' : 'команд'} из системы, 
-              включая все коды регистрации и данные участников. Это действие необратимо.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isResetting}>Отмена</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleResetAllTeams} 
-              disabled={isResetting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {isResetting ? (
-                <>
-                  <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
-                  Удаление...
-                </>
-              ) : (
-                'Да, удалить все команды'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

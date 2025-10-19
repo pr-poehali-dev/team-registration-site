@@ -13,25 +13,6 @@ def generate_auth_code() -> str:
     part2 = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     return f'REG-{part1}-{part2}'
 
-def verify_admin_token(event: Dict[str, Any], conn) -> bool:
-    """Проверяет токен администратора"""
-    headers = event.get('headers', {})
-    admin_token = headers.get('X-Admin-Token', headers.get('x-admin-token', ''))
-    
-    if not admin_token:
-        return False
-    
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT is_active FROM t_p68536388_team_registration_si.admin_users 
-                WHERE username = %s AND is_active = true
-            """, (admin_token,))
-            admin = cur.fetchone()
-            return admin is not None
-    except:
-        return False
-
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Business: API для управления заявками команд - создание, получение списка, обновление статуса
@@ -137,7 +118,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text, auth_code, current_status, bracket_url
+                               created_at::text, auth_code
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE captain_telegram = %s
                     """, (captain_telegram,))
@@ -161,7 +142,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute("""
                         SELECT id, team_name, captain_name, captain_telegram, 
                                members_count, members_info, status, admin_comment, 
-                               created_at::text, auth_code, current_status, bracket_url
+                               created_at::text, auth_code
                         FROM t_p68536388_team_registration_si.teams 
                         WHERE UPPER(REPLACE(auth_code, '-', '')) = %s
                     """, (code_clean,))
@@ -178,28 +159,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             else:
                 # Получить список всех команд
-                status_filter = params.get('status', 'approved')
-                
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    if status_filter == 'all':
-                        cur.execute("""
-                            SELECT id, team_name, captain_name, captain_telegram, 
-                                   members_count, members_info, status, admin_comment, 
-                                   created_at::text, current_status, bracket_url, 
-                                   status_updated_at::text
-                            FROM t_p68536388_team_registration_si.teams 
-                            ORDER BY created_at DESC
-                        """)
-                    else:
-                        cur.execute("""
-                            SELECT id, team_name, captain_name, captain_telegram, 
-                                   members_count, members_info, status, admin_comment, 
-                                   created_at::text, current_status, bracket_url, 
-                                   status_updated_at::text
-                            FROM t_p68536388_team_registration_si.teams 
-                            WHERE status = %s
-                            ORDER BY created_at DESC
-                        """, (status_filter,))
+                    cur.execute("""
+                        SELECT id, team_name, captain_name, captain_telegram, 
+                               members_count, members_info, status, admin_comment, 
+                               created_at::text
+                        FROM t_p68536388_team_registration_si.teams 
+                        ORDER BY created_at DESC
+                    """)
                     teams = cur.fetchall()
                 
                 return {
@@ -215,20 +182,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
-            
-            # Проверка токена для админских операций
-            admin_resources = ['import_teams_list', 'generate_bracket', 'clear_all', 'clear_bracket', 'shuffle_and_generate', 'bulk_create']
-            if resource in admin_resources:
-                if not verify_admin_token(event, conn):
-                    return {
-                        'statusCode': 401,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
-                        'isBase64Encoded': False
-                    }
             
             # Импорт списка команд
             if resource == 'import_teams_list':
@@ -288,13 +241,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Генерация турнирной сетки
             if resource == 'generate_bracket':
-                settings = body_data.get('settings', {})
-                bracket_type = settings.get('bracketType', 'double')
-                auto_calculate = settings.get('autoCalculate', True)
-                custom_upper_rounds = settings.get('upperRounds')
-                custom_lower_rounds = settings.get('lowerRounds')
-                has_grand_final = settings.get('hasGrandFinal', True)
-                
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute("""
                         SELECT id, team_name 
@@ -328,58 +274,82 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     import math
                     
-                    if auto_calculate or custom_upper_rounds is None:
-                        rounds_needed = math.ceil(math.log2(team_count))
-                    else:
-                        rounds_needed = custom_upper_rounds
+                    # Находим ближайшую степень двойки
+                    next_power_of_2 = 2 ** math.ceil(math.log2(team_count))
                     
-                    if auto_calculate or custom_lower_rounds is None:
-                        lower_rounds = max(1, (rounds_needed - 1) * 2)
-                    else:
-                        lower_rounds = custom_lower_rounds
+                    # Сколько команд нужно во втором раунде (степень 2)
+                    # Команды с баем = разница между степенью 2 и количеством команд
+                    teams_with_bye = next_power_of_2 * 2 - team_count
                     
-                    # Создаём матчи первого раунда с реальными командами
+                    # Команды в первом раунде (должно быть чётное число)
+                    teams_in_round1 = team_count - teams_with_bye
+                    if teams_in_round1 < 0:
+                        teams_in_round1 = 0
+                    first_round_matches = teams_in_round1 // 2
+                    
+                    rounds_needed = math.ceil(math.log2(team_count))
+                    
                     team_idx = 0
-                    first_round_matches_count = (team_count + 1) // 2
                     
-                    for m in range(first_round_matches_count):
+                    # Создаём матчи первого раунда
+                    for i in range(first_round_matches):
                         team1_id = approved_teams[team_idx]['id']
-                        team_idx += 1
+                        team2_id = approved_teams[team_idx + 1]['id']
                         
-                        if team_idx < team_count:
-                            team2_id = approved_teams[team_idx]['id']
-                            team_idx += 1
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team2_id, status)
-                                VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
-                        else:
-                            # Последняя команда получает BYE
-                            cur.execute("""
-                                INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status, winner)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, team1_id, 'BYE (автопроход)', 'finished', team1_id))
+                        cur.execute("""
+                            INSERT INTO t_p68536388_team_registration_si.matches 
+                            (match_number, bracket_type, round_number, team1_id, team2_id, status)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                        """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
                         
                         match_num += 1
                         matches_created += 1
+                        team_idx += 2
                     
-                    # Создаём последующие раунды с плейсхолдерами
-                    previous_round_matches = first_round_matches_count
-                    previous_round_start = 1
+                    # Второй раунд: победители первого раунда + команды с баем
+                    if rounds_needed >= 2:
+                        round2_start = match_num
+                        num_round2_matches = next_power_of_2 // 2
+                        
+                        # Сначала создаём матчи для команд с баем
+                        bye_matches = 0
+                        while team_idx < team_count and bye_matches < num_round2_matches:
+                            if bye_matches < first_round_matches:
+                                # Победитель раунда 1 vs команда с баем
+                                bye_team_id = approved_teams[team_idx]['id']
+                                cur.execute("""
+                                    INSERT INTO t_p68536388_team_registration_si.matches 
+                                    (match_number, bracket_type, round_number, team1_placeholder, team2_id, status)
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                """, (match_num, 'upper', 2, f'Победитель #{bye_matches + 1}', bye_team_id, 'upcoming'))
+                                team_idx += 1
+                            else:
+                                break
+                            match_num += 1
+                            matches_created += 1
+                            bye_matches += 1
+                        
+                        # Затем создаём матчи между победителями первого раунда (если есть)
+                        remaining_r1_matches = first_round_matches - bye_matches
+                        for i in range(remaining_r1_matches // 2):
+                            source1 = bye_matches + 1 + i * 2
+                            source2 = bye_matches + 2 + i * 2
+                            cur.execute("""
+                                INSERT INTO t_p68536388_team_registration_si.matches 
+                                (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 2, f'Победитель #{source1}', f'Победитель #{source2}', 'upcoming'))
+                            match_num += 1
+                            matches_created += 1
+                        
+                        previous_round_start = round2_start
+                    else:
+                        previous_round_start = 1
                     
-                    current_round = 2
-                    while previous_round_matches > 1:
-                        # Количество обычных матчей = предыдущие матчи // 2
-                        regular_matches = previous_round_matches // 2
-                        
-                        # Если нечётное, добавляем 1 проходной матч
-                        has_bye = (previous_round_matches % 2 == 1)
-                        num_matches = regular_matches + (1 if has_bye else 0)
-                        
-                        # Создаём обычные матчи
-                        for m in range(regular_matches):
+                    # Остальные раунды
+                    for r in range(3, rounds_needed + 1):
+                        num_matches = next_power_of_2 // (2 ** r)
+                        for m in range(num_matches):
                             source_match_1 = previous_round_start + (m * 2)
                             source_match_2 = previous_round_start + (m * 2) + 1
                             
@@ -387,53 +357,39 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', current_round, f'Победитель #{source_match_1}', f'Победитель #{source_match_2}', 'upcoming'))
-                            
+                            """, (match_num, 'upper', r, f'Победитель #{source_match_1}', f'Победитель #{source_match_2}', 'upcoming'))
                             match_num += 1
                             matches_created += 1
+                        previous_round_start = match_num - num_matches
+                    
+                    lower_rounds = max(1, (rounds_needed - 1) * 2)
+                    lower_start = match_num
+                    for r in range(1, lower_rounds + 1):
+                        if r % 2 == 1:
+                            num_matches = max(1, first_round_matches // (2 ** ((r + 1) // 2)))
+                        else:
+                            num_matches = max(1, first_round_matches // (2 ** (r // 2 + 1)))
                         
-                        # Создаём проходной матч если нечётное
-                        if has_bye:
-                            last_match = previous_round_start + previous_round_matches - 1
+                        for m in range(num_matches):
+                            if r == 1:
+                                placeholder = f'TBD (Раунд {r})'
+                            else:
+                                placeholder = f'TBD (Lower {r})'
+                            
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', current_round, f'Победитель #{last_match}', 'BYE (автопроход)', 'upcoming'))
-                            
+                            """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
                             match_num += 1
                             matches_created += 1
-                        
-                        previous_round_start = match_num - num_matches
-                        previous_round_matches = num_matches
-                        current_round += 1
                     
-                    # Нижняя сетка (losers bracket) - только для double elimination
-                    if bracket_type == 'double' and lower_rounds > 0:
-                        for r in range(1, lower_rounds + 1):
-                            if r % 2 == 1:
-                                num_matches = max(1, first_round_matches_count // (2 ** ((r + 1) // 2)))
-                            else:
-                                num_matches = max(1, first_round_matches_count // (2 ** (r // 2 + 1)))
-                            
-                            for m in range(num_matches):
-                                placeholder = f'TBD (Lower R{r})'
-                                cur.execute("""
-                                    INSERT INTO t_p68536388_team_registration_si.matches 
-                                    (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                                    VALUES (%s, %s, %s, %s, %s, %s)
-                                """, (match_num, 'lower', r, placeholder, placeholder, 'upcoming'))
-                                match_num += 1
-                                matches_created += 1
-                    
-                    # Гранд-финал - только для double elimination
-                    if bracket_type == 'double' and has_grand_final:
-                        cur.execute("""
-                            INSERT INTO t_p68536388_team_registration_si.matches 
-                            (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
-                        matches_created += 1
+                    cur.execute("""
+                        INSERT INTO t_p68536388_team_registration_si.matches 
+                        (match_number, bracket_type, round_number, team1_placeholder, team2_placeholder, status)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (match_num, 'grand_final', 1, 'Победитель верхней сетки', 'Победитель нижней сетки', 'upcoming'))
+                    matches_created += 1
                     
                     conn.commit()
                 
@@ -536,30 +492,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     import math
                     rounds_needed = math.ceil(math.log2(team_count))
                     
-                    # Создаём матчи первого раунда с реальными командами
-                    team_idx = 0
-                    first_round_matches_count = (team_count + 1) // 2
-                    
-                    for m in range(first_round_matches_count):
-                        team1_id = shuffled_teams[team_idx]['id']
-                        team_idx += 1
+                    for i in range(0, team_count, 2):
+                        team1_id = shuffled_teams[i]['id']
+                        team2_id = shuffled_teams[i+1]['id'] if i+1 < team_count else None
                         
-                        if team_idx < team_count:
-                            team2_id = shuffled_teams[team_idx]['id']
-                            team_idx += 1
+                        if team2_id:
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
                                 (match_number, bracket_type, round_number, team1_id, team2_id, status)
                                 VALUES (%s, %s, %s, %s, %s, %s)
                             """, (match_num, 'upper', 1, team1_id, team2_id, 'upcoming'))
                         else:
-                            # Последняя команда получает BYE (проходит в следующий раунд автоматически)
                             cur.execute("""
                                 INSERT INTO t_p68536388_team_registration_si.matches 
-                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status, winner)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            """, (match_num, 'upper', 1, team1_id, 'BYE (автопроход)', 'finished', team1_id))
-                        
+                                (match_number, bracket_type, round_number, team1_id, team1_placeholder, status)
+                                VALUES (%s, %s, %s, %s, %s, %s)
+                            """, (match_num, 'upper', 1, team1_id, 'BYE', 'upcoming'))
                         match_num += 1
                         matches_created += 1
                     
@@ -791,18 +739,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 raise
         
         elif method == 'PUT':
-            # Проверка токена для всех PUT операций (админские)
-            if not verify_admin_token(event, conn):
-                return {
-                    'statusCode': 401,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
-                    'isBase64Encoded': False
-                }
-            
             body_data = json.loads(event.get('body', '{}'))
             resource = body_data.get('resource')
             
@@ -821,38 +757,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
-                        SELECT match_number, bracket_type, round_number, team1_id, team2_id
-                        FROM t_p68536388_team_registration_si.matches 
-                        WHERE id = %s
-                    """, (match_id,))
-                    current_match = cur.fetchone()
-                    
-                    if not current_match:
-                        return {
-                            'statusCode': 404,
-                            'headers': {
-                                'Content-Type': 'application/json',
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            'body': json.dumps({'success': False, 'message': 'Match not found'}),
-                            'isBase64Encoded': False
-                        }
-                    
+                with conn.cursor() as cur:
                     cur.execute("""
                         UPDATE t_p68536388_team_registration_si.matches 
-                        SET team1_id = %s, team2_id = %s, 
-                            team1_placeholder = %s, team2_placeholder = %s,
-                            score1 = %s, score2 = %s, 
-                            winner = %s, status = %s, scheduled_time = %s, 
-                            updated_at = CURRENT_TIMESTAMP
+                        SET team1_id = %s, team2_id = %s, score1 = %s, score2 = %s, 
+                            winner = %s, status = %s, scheduled_time = %s, updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s
                     """, (
                         body_data.get('team1_id'),
                         body_data.get('team2_id'),
-                        body_data.get('team1_placeholder'),
-                        body_data.get('team2_placeholder'),
                         body_data.get('score1'),
                         body_data.get('score2'),
                         body_data.get('winner'),
@@ -860,36 +773,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         body_data.get('scheduled_time'),
                         match_id
                     ))
-                    
-                    winner_id = body_data.get('winner')
-                    if winner_id and body_data.get('status') == 'finished':
-                        match_num = current_match['match_number']
-                        bracket = current_match['bracket_type']
-                        round_num = current_match['round_number']
-                        
-                        cur.execute("""
-                            SELECT id, match_number, team1_placeholder, team2_placeholder
-                            FROM t_p68536388_team_registration_si.matches 
-                            WHERE bracket_type = %s 
-                            AND round_number = %s + 1
-                            AND (team1_placeholder LIKE %s OR team2_placeholder LIKE %s)
-                        """, (bracket, round_num, f'%#{match_num}%', f'%#{match_num}%'))
-                        next_match = cur.fetchone()
-                        
-                        if next_match:
-                            if f'#{match_num}' in next_match['team1_placeholder']:
-                                cur.execute("""
-                                    UPDATE t_p68536388_team_registration_si.matches 
-                                    SET team1_id = %s, team1_placeholder = NULL
-                                    WHERE id = %s
-                                """, (winner_id, next_match['id']))
-                            elif f'#{match_num}' in next_match['team2_placeholder']:
-                                cur.execute("""
-                                    UPDATE t_p68536388_team_registration_si.matches 
-                                    SET team2_id = %s, team2_placeholder = NULL
-                                    WHERE id = %s
-                                """, (winner_id, next_match['id']))
-                    
                     conn.commit()
                 
                 return {
@@ -898,69 +781,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*'
                     },
-                    'body': json.dumps({'success': True, 'message': 'Match updated and winner promoted'}),
-                    'isBase64Encoded': False
-                }
-            
-            # Обновить current_status команды
-            if resource == 'team_status':
-                team_id = body_data.get('team_id')
-                current_status = body_data.get('current_status')
-                
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
-                        UPDATE t_p68536388_team_registration_si.teams 
-                        SET current_status = %s, status_updated_at = CURRENT_TIMESTAMP
-                        WHERE id = %s
-                        RETURNING captain_telegram, team_name
-                    """, (current_status, team_id))
-                    team = cur.fetchone()
-                    conn.commit()
-                    
-                    # Отправляем уведомление капитану
-                    if team:
-                        send_status_notification(team['captain_telegram'], team['team_name'], current_status)
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'message': 'Team status updated'}),
-                    'isBase64Encoded': False
-                }
-            
-            # Обновить bracket_url для всех команд
-            if resource == 'bracket_url':
-                bracket_url = body_data.get('bracket_url')
-                
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
-                        UPDATE t_p68536388_team_registration_si.teams 
-                        SET bracket_url = %s
-                    """, (bracket_url,))
-                    
-                    # Получаем всех капитанов
-                    cur.execute("""
-                        SELECT captain_telegram, team_name 
-                        FROM t_p68536388_team_registration_si.teams
-                        WHERE status = 'approved'
-                    """)
-                    teams = cur.fetchall()
-                    conn.commit()
-                    
-                    # Отправляем уведомления
-                    for team in teams:
-                        send_bracket_url_notification(team['captain_telegram'], team['team_name'], bracket_url)
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'message': 'Bracket URL updated'}),
+                    'body': json.dumps({'success': True, 'message': 'Match updated'}),
                     'isBase64Encoded': False
                 }
             
@@ -1028,75 +849,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'DELETE':
+            # Удалить команду
             params = event.get('queryStringParameters', {})
             team_id = params.get('id')
-            force_delete = params.get('force') == 'true'
-            reset_all = params.get('reset_all') == 'true'
-            
-            # Reset all teams - только для администратора
-            if reset_all:
-                if not verify_admin_token(event, conn):
-                    return {
-                        'statusCode': 401,
-                        'headers': {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        },
-                        'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
-                        'isBase64Encoded': False
-                    }
-                
-                with conn.cursor() as cur:
-                    cur.execute("DELETE FROM t_p68536388_team_registration_si.matches")
-                    cur.execute("DELETE FROM t_p68536388_team_registration_si.pending_actions")
-                    cur.execute("DELETE FROM t_p68536388_team_registration_si.teams")
-                    conn.commit()
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'message': 'All teams deleted successfully'}),
-                    'isBase64Encoded': False
-                }
-            
-            # Force delete - прямое удаление без подтверждения одной команды
-            if force_delete:
-                with conn.cursor() as cur:
-                    cur.execute("""
-                        DELETE FROM t_p68536388_team_registration_si.pending_actions
-                        WHERE team_id = %s
-                    """, (int(team_id),))
-                    
-                    cur.execute("""
-                        DELETE FROM t_p68536388_team_registration_si.teams
-                        WHERE id = %s
-                    """, (int(team_id),))
-                    conn.commit()
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'message': 'Team data completely deleted'}),
-                    'isBase64Encoded': False
-                }
-            
-            # Обычное удаление команды через подтверждение
-            if not verify_admin_token(event, conn):
-                return {
-                    'statusCode': 401,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps({'success': False, 'message': 'Unauthorized'}),
-                    'isBase64Encoded': False
-                }
             
             action_id = create_pending_action(conn, int(team_id), 'delete', {})
             send_confirmation_request(conn, int(team_id), action_id, 'delete', {})
@@ -1212,107 +967,6 @@ def send_message_with_keyboard(bot_token: str, chat_id: int, text: str, keyboard
         'text': text,
         'parse_mode': 'HTML',
         'reply_markup': keyboard
-    }
-    
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(data).encode('utf-8'),
-        headers={'Content-Type': 'application/json'}
-    )
-    
-    try:
-        with urllib.request.urlopen(req) as response:
-            return json.loads(response.read().decode('utf-8'))
-    except Exception as e:
-        print(f"Failed to send message: {str(e)}")
-        return None
-
-def send_status_notification(captain_telegram: str, team_name: str, status: str):
-    try:
-        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-        if not bot_token or not captain_telegram:
-            return
-        
-        if not captain_telegram.startswith('@'):
-            return
-        
-        username = captain_telegram[1:]
-        
-        dsn = os.environ.get('DATABASE_URL')
-        conn = psycopg.connect(dsn)
-        
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT chat_id FROM t_p68536388_team_registration_si.telegram_users 
-                WHERE username = %s
-            """, (username,))
-            user = cur.fetchone()
-        
-        conn.close()
-        
-        if not user:
-            return
-        
-        status_messages = {
-            'waiting': '⏳ Ожидание - Готовьтесь к матчу',
-            'streaming': '📺 На стриме - Ваша команда сейчас в эфире!',
-            'playing': '🎮 Играют - Удачи в игре!',
-            'finished': '✅ Завершили - Спасибо за участие!'
-        }
-        
-        message = (
-            f"🏆 <b>Обновление статуса команды</b>\n\n"
-            f"Команда: {team_name}\n"
-            f"Статус: {status_messages.get(status, status)}\n"
-        )
-        
-        send_simple_message(bot_token, user['chat_id'], message)
-    except Exception as e:
-        print(f"Failed to send status notification: {str(e)}")
-
-def send_bracket_url_notification(captain_telegram: str, team_name: str, bracket_url: str):
-    try:
-        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-        if not bot_token or not captain_telegram:
-            return
-        
-        if not captain_telegram.startswith('@'):
-            return
-        
-        username = captain_telegram[1:]
-        
-        dsn = os.environ.get('DATABASE_URL')
-        conn = psycopg.connect(dsn)
-        
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
-                SELECT chat_id FROM t_p68536388_team_registration_si.telegram_users 
-                WHERE username = %s
-            """, (username,))
-            user = cur.fetchone()
-        
-        conn.close()
-        
-        if not user:
-            return
-        
-        message = (
-            f"🎯 <b>Турнирная сетка обновлена!</b>\n\n"
-            f"Команда: {team_name}\n"
-            f"Ссылка: {bracket_url}\n\n"
-            f"Следите за расписанием ваших матчей!"
-        )
-        
-        send_simple_message(bot_token, user['chat_id'], message)
-    except Exception as e:
-        print(f"Failed to send bracket URL notification: {str(e)}")
-
-def send_simple_message(bot_token: str, chat_id: int, text: str):
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    data = {
-        'chat_id': chat_id,
-        'text': text,
-        'parse_mode': 'HTML'
     }
     
     req = urllib.request.Request(

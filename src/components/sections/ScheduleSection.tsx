@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import TournamentBracket from '@/components/TournamentBracket';
 import funcUrls from '../../../backend/func2url.json';
 
 const API_URL = funcUrls.teams;
@@ -35,6 +37,7 @@ interface DBMatch {
 }
 
 export default function ScheduleSection() {
+  const [activeTab, setActiveTab] = useState('bracket');
   const [dbMatches, setDbMatches] = useState<DBMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,7 +81,73 @@ export default function ScheduleSection() {
     };
   };
 
-  // Расписание
+  // Группируем матчи по типу сетки и раунду
+  const upperBracketRounds: any[][] = [];
+  const lowerBracketRounds: any[][] = [];
+  let grandFinals: any = null;
+
+  if (dbMatches.length > 0) {
+    // Находим максимальный номер раунда для каждой сетки
+    const maxUpperRound = Math.max(
+      ...dbMatches.filter(m => m.bracket_type === 'upper').map(m => m.round_number),
+      0
+    );
+    const maxLowerRound = Math.max(
+      ...dbMatches.filter(m => m.bracket_type === 'lower').map(m => m.round_number),
+      0
+    );
+
+    // Заполняем верхнюю сетку
+    for (let i = 1; i <= maxUpperRound; i++) {
+      const roundMatches = dbMatches
+        .filter(m => m.bracket_type === 'upper' && m.round_number === i)
+        .sort((a, b) => a.match_number - b.match_number)
+        .map(m => ({
+          id: m.match_number,
+          team1: m.team1_name || m.team1_placeholder || 'TBD',
+          team2: m.team2_name || m.team2_placeholder || 'TBD',
+          score1: m.score1,
+          score2: m.score2,
+          winner: m.winner,
+        }));
+      if (roundMatches.length > 0) {
+        upperBracketRounds.push(roundMatches);
+      }
+    }
+
+    // Заполняем нижнюю сетку
+    for (let i = 1; i <= maxLowerRound; i++) {
+      const roundMatches = dbMatches
+        .filter(m => m.bracket_type === 'lower' && m.round_number === i)
+        .sort((a, b) => a.match_number - b.match_number)
+        .map(m => ({
+          id: m.match_number,
+          team1: m.team1_name || m.team1_placeholder || 'TBD',
+          team2: m.team2_name || m.team2_placeholder || 'TBD',
+          score1: m.score1,
+          score2: m.score2,
+          winner: m.winner,
+        }));
+      if (roundMatches.length > 0) {
+        lowerBracketRounds.push(roundMatches);
+      }
+    }
+
+    // Гранд финал
+    const finalMatch = dbMatches.find(m => m.bracket_type === 'grand_final');
+    if (finalMatch) {
+      grandFinals = {
+        id: finalMatch.match_number,
+        team1: finalMatch.team1_name || finalMatch.team1_placeholder || 'TBD',
+        team2: finalMatch.team2_name || finalMatch.team2_placeholder || 'TBD',
+        score1: finalMatch.score1,
+        score2: finalMatch.score2,
+        winner: finalMatch.winner,
+      };
+    }
+  }
+
+  // Расписание для вкладки
   const schedule: Match[] = dbMatches
     .filter(m => m.scheduled_time)
     .sort((a, b) => new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime())
@@ -132,7 +201,7 @@ export default function ScheduleSection() {
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center">
               <Icon name="Loader2" size={48} className="animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Загрузка расписания...</p>
+              <p className="text-muted-foreground">Загрузка турнирной сетки...</p>
             </div>
           </CardContent>
         </Card>
@@ -146,17 +215,17 @@ export default function ScheduleSection() {
         <Card className="border-primary/20">
           <CardHeader>
             <CardTitle className="text-3xl font-heading flex items-center gap-3">
-              <Icon name="Calendar" size={32} className="text-primary" />
-              Расписание матчей
+              <Icon name="Trophy" size={32} className="text-primary" />
+              Турнирная сетка
             </CardTitle>
-            <CardDescription>График проведения матчей турнира</CardDescription>
+            <CardDescription>Расписание матчей и турнирная сетка в формате Double Elimination</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-12">
               <Icon name="CalendarClock" size={64} className="text-muted-foreground mx-auto mb-4" />
-              <p className="text-xl text-muted-foreground mb-2">Расписание появится после создания матчей</p>
+              <p className="text-xl text-muted-foreground mb-2">Сетка появится после создания матчей</p>
               <p className="text-sm text-muted-foreground">
-                Администратор настроит расписание в админ-панели
+                Администратор настроит турнирную сетку в админ-панели
               </p>
             </div>
           </CardContent>
@@ -170,25 +239,53 @@ export default function ScheduleSection() {
       <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="text-3xl font-heading flex items-center gap-3">
-            <Icon name="Calendar" size={32} className="text-primary" />
-            Расписание матчей
+            <Icon name="Trophy" size={32} className="text-primary" />
+            Турнирная сетка
           </CardTitle>
-          <CardDescription>График проведения матчей турнира</CardDescription>
+          <CardDescription>Расписание матчей и турнирная сетка в формате Double Elimination</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            {schedule.map((match) => (
-              <MatchCard key={match.id} match={match} showRound />
-            ))}
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="bracket" className="flex items-center gap-2">
+                <Icon name="GitBranch" size={16} />
+                Турнирная сетка
+              </TabsTrigger>
+              <TabsTrigger value="schedule" className="flex items-center gap-2">
+                <Icon name="Calendar" size={16} />
+                Расписание
+              </TabsTrigger>
+            </TabsList>
 
-          {schedule.length === 0 && (
-            <div className="text-center py-12">
-              <Icon name="CalendarClock" size={64} className="text-muted-foreground mx-auto mb-4" />
-              <p className="text-xl text-muted-foreground mb-2">Расписание появится позже</p>
-              <p className="text-sm text-muted-foreground">Следите за обновлениями</p>
-            </div>
-          )}
+            <TabsContent value="bracket" className="space-y-8">
+              <TournamentBracket 
+                upperMatches={upperBracketRounds}
+                lowerMatches={lowerBracketRounds}
+                finals={grandFinals}
+              />
+            </TabsContent>
+
+            <TabsContent value="schedule" className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="CalendarDays" size={20} className="text-primary" />
+                <h3 className="text-xl font-semibold">Расписание матчей</h3>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                {schedule.map((match) => (
+                  <MatchCard key={match.id} match={match} showRound />
+                ))}
+              </div>
+
+              {schedule.length === 0 && (
+                <div className="text-center py-12">
+                  <Icon name="CalendarClock" size={64} className="text-muted-foreground mx-auto mb-4" />
+                  <p className="text-xl text-muted-foreground mb-2">Расписание появится позже</p>
+                  <p className="text-sm text-muted-foreground">Следите за обновлениями</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
