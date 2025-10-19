@@ -31,22 +31,45 @@ export default function MatchEditForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h3 className="text-lg font-semibold">
-        Редактировать матч #{selectedMatch.match_number}
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">
+          Матч #{selectedMatch.match_number}
+        </h3>
+        <div className="text-xs text-muted-foreground">
+          {selectedMatch.bracket_type} R{selectedMatch.round_number}
+        </div>
+      </div>
 
       <div className="space-y-2">
-        <Label>Команда 1</Label>
+        <div className="flex items-center justify-between">
+          <Label>Команда 1</Label>
+          {selectedMatch.team1_id && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdateMatch({ ...selectedMatch, team1_id: null })}
+              className="h-6 text-xs"
+            >
+              Очистить
+            </Button>
+          )}
+        </div>
         <Select
-          value={selectedMatch.team1_id?.toString() || ''}
+          value={selectedMatch.team1_id?.toString() || 'none'}
           onValueChange={(value) =>
-            onUpdateMatch({ ...selectedMatch, team1_id: parseInt(value) })
+            onUpdateMatch({ ...selectedMatch, team1_id: value === 'none' ? null : parseInt(value) })
           }
         >
           <SelectTrigger>
-            <SelectValue placeholder="Выберите команду" />
+            <SelectValue placeholder={selectedMatch.team1_placeholder || "Выберите команду"}>
+              {selectedMatch.team1_name || selectedMatch.team1_placeholder || "Выберите команду"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="none">
+              <span className="text-muted-foreground">Не выбрано</span>
+            </SelectItem>
             {teams.map((team) => (
               <SelectItem key={team.id} value={team.id.toString()}>
                 {team.team_name}
@@ -57,17 +80,35 @@ export default function MatchEditForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Команда 2</Label>
+        <div className="flex items-center justify-between">
+          <Label>Команда 2</Label>
+          {selectedMatch.team2_id && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdateMatch({ ...selectedMatch, team2_id: null })}
+              className="h-6 text-xs"
+            >
+              Очистить
+            </Button>
+          )}
+        </div>
         <Select
-          value={selectedMatch.team2_id?.toString() || ''}
+          value={selectedMatch.team2_id?.toString() || 'none'}
           onValueChange={(value) =>
-            onUpdateMatch({ ...selectedMatch, team2_id: parseInt(value) })
+            onUpdateMatch({ ...selectedMatch, team2_id: value === 'none' ? null : parseInt(value) })
           }
         >
           <SelectTrigger>
-            <SelectValue placeholder="Выберите команду" />
+            <SelectValue placeholder={selectedMatch.team2_placeholder || "Выберите команду"}>
+              {selectedMatch.team2_name || selectedMatch.team2_placeholder || "Выберите команду"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="none">
+              <span className="text-muted-foreground">Не выбрано</span>
+            </SelectItem>
             {teams.map((team) => (
               <SelectItem key={team.id} value={team.id.toString()}>
                 {team.team_name}
@@ -75,6 +116,38 @@ export default function MatchEditForm({
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Плейсхолдер команды 1 (опционально)</Label>
+        <Input
+          type="text"
+          value={selectedMatch.team1_placeholder || ''}
+          onChange={(e) =>
+            onUpdateMatch({
+              ...selectedMatch,
+              team1_placeholder: e.target.value,
+            })
+          }
+          placeholder="Например: Победитель матча #1"
+          className="text-sm"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Плейсхолдер команды 2 (опционально)</Label>
+        <Input
+          type="text"
+          value={selectedMatch.team2_placeholder || ''}
+          onChange={(e) =>
+            onUpdateMatch({
+              ...selectedMatch,
+              team2_placeholder: e.target.value,
+            })
+          }
+          placeholder="Например: Победитель матча #2"
+          className="text-sm"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -113,21 +186,32 @@ export default function MatchEditForm({
       <div className="space-y-2">
         <Label>Победитель</Label>
         <Select
-          value={selectedMatch.winner?.toString() || ''}
-          onValueChange={(value) =>
+          value={selectedMatch.winner?.toString() || 'none'}
+          onValueChange={(value) => {
+            const winnerId = value === 'none' ? null : 
+                           value === 'team1' ? selectedMatch.team1_id :
+                           value === 'team2' ? selectedMatch.team2_id : null;
             onUpdateMatch({
               ...selectedMatch,
-              winner: value ? parseInt(value) : undefined,
-            })
-          }
+              winner: winnerId,
+            });
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Выберите победителя" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Нет победителя</SelectItem>
-            <SelectItem value="1">Команда 1</SelectItem>
-            <SelectItem value="2">Команда 2</SelectItem>
+            <SelectItem value="none">Нет победителя</SelectItem>
+            {selectedMatch.team1_id && (
+              <SelectItem value="team1">
+                {selectedMatch.team1_name || 'Команда 1'}
+              </SelectItem>
+            )}
+            {selectedMatch.team2_id && (
+              <SelectItem value="team2">
+                {selectedMatch.team2_name || 'Команда 2'}
+              </SelectItem>
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -165,7 +249,30 @@ export default function MatchEditForm({
         />
       </div>
 
-      <div className="flex gap-2 pt-4">
+      <div className="flex gap-2 pt-4 border-t">
+        <Button 
+          type="button" 
+          variant="outline"
+          onClick={() => {
+            if (selectedMatch.score1 !== undefined && selectedMatch.score2 !== undefined) {
+              const winnerId = selectedMatch.score1 > selectedMatch.score2 
+                ? selectedMatch.team1_id 
+                : selectedMatch.score2 > selectedMatch.score1 
+                ? selectedMatch.team2_id 
+                : null;
+              onUpdateMatch({
+                ...selectedMatch,
+                winner: winnerId,
+                status: 'finished'
+              });
+            }
+          }}
+          disabled={selectedMatch.score1 === undefined || selectedMatch.score2 === undefined}
+          className="flex-1"
+        >
+          <Icon name="Trophy" size={16} className="mr-2" />
+          Определить победителя
+        </Button>
         <Button type="submit" className="flex-1">
           <Icon name="Save" size={16} className="mr-2" />
           Сохранить

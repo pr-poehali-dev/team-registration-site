@@ -340,6 +340,8 @@ export function useMatchManagement(adminToken: string = '') {
           match_id: selectedMatch.id,
           team1_id: selectedMatch.team1_id,
           team2_id: selectedMatch.team2_id,
+          team1_placeholder: selectedMatch.team1_placeholder,
+          team2_placeholder: selectedMatch.team2_placeholder,
           score1: selectedMatch.score1,
           score2: selectedMatch.score2,
           winner: selectedMatch.winner,

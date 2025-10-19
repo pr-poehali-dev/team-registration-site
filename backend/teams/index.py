@@ -767,12 +767,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 with conn.cursor() as cur:
                     cur.execute("""
                         UPDATE t_p68536388_team_registration_si.matches 
-                        SET team1_id = %s, team2_id = %s, score1 = %s, score2 = %s, 
-                            winner = %s, status = %s, scheduled_time = %s, updated_at = CURRENT_TIMESTAMP
+                        SET team1_id = %s, team2_id = %s, 
+                            team1_placeholder = %s, team2_placeholder = %s,
+                            score1 = %s, score2 = %s, 
+                            winner = %s, status = %s, scheduled_time = %s, 
+                            updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s
                     """, (
                         body_data.get('team1_id'),
                         body_data.get('team2_id'),
+                        body_data.get('team1_placeholder'),
+                        body_data.get('team2_placeholder'),
                         body_data.get('score1'),
                         body_data.get('score2'),
                         body_data.get('winner'),
