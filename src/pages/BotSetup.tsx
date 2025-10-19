@@ -28,33 +28,20 @@ export default function BotSetup() {
   const { toast } = useToast();
 
   const setupBot = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${SETUP_URL}?action=start`);
-      const data = await response.json();
-      setBotInfo(data);
-      
-      if (data.success) {
-        toast({
-          title: "Бот настроен!",
-          description: "Telegram бот готов к работе",
-        });
-      } else {
-        toast({
-          title: "Ошибка",
-          description: data.error || "Не удалось настроить бота",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось подключиться к серверу",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Открыть страницу настройки webhook
+    window.open('https://ce876244.tw1.ru/setup-telegram-webhook.php', '_blank');
+    
+    setBotInfo({
+      success: true,
+      message: "Откройте страницу настройки webhook в новой вкладке",
+      bot_username: "ваш_бот",
+      bot_link: "https://t.me/ваш_бот"
+    });
+    
+    toast({
+      title: "Инструкция открыта",
+      description: "Следуйте инструкциям на странице настройки",
+    });
   };
 
   const stopBot = async () => {
