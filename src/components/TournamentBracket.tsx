@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -25,13 +25,16 @@ interface BracketProps {
   lowerMatches: BracketMatch[][];
   finals?: BracketMatch;
   onUpdateMatch?: (matchId: number, score1: number, score2: number) => void;
+  onSwapMatches?: (match1Id: number, match2Id: number) => void;
   isEditable?: boolean;
 }
 
-export default function TournamentBracket({ upperMatches, lowerMatches, finals, onUpdateMatch, isEditable = false }: BracketProps) {
+export default function TournamentBracket({ upperMatches, lowerMatches, finals, onUpdateMatch, onSwapMatches, isEditable = false }: BracketProps) {
   const [editingMatch, setEditingMatch] = useState<BracketMatch | null>(null);
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
+  const [draggedMatch, setDraggedMatch] = useState<BracketMatch | null>(null);
+  const dragCounter = useRef(0);
 
   const handleEditClick = (match: BracketMatch) => {
     setEditingMatch(match);
@@ -51,15 +54,88 @@ export default function TournamentBracket({ upperMatches, lowerMatches, finals, 
   const MatchBox = ({ match, isWinner }: { match: BracketMatch; isWinner?: boolean }) => {
     const team1Won = match.winner === 1;
     const team2Won = match.winner === 2;
+    const [isDragOver, setIsDragOver] = useState(false);
+
+    const handleDragStart = (e: React.DragEvent) => {
+      if (!isEditable) return;
+      e.stopPropagation();
+      setDraggedMatch(match);
+      e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragEnter = (e: React.DragEvent) => {
+      if (!isEditable || !draggedMatch || draggedMatch.id === match.id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current++;
+      setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+      if (!isEditable) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current--;
+      if (dragCounter.current === 0) {
+        setIsDragOver(false);
+      }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+      if (!isEditable || !draggedMatch) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+      if (!isEditable || !draggedMatch || draggedMatch.id === match.id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current = 0;
+      setIsDragOver(false);
+      
+      if (onSwapMatches) {
+        onSwapMatches(draggedMatch.id, match.id);
+      }
+      setDraggedMatch(null);
+    };
+
+    const handleDragEnd = () => {
+      setDraggedMatch(null);
+      setIsDragOver(false);
+      dragCounter.current = 0;
+    };
 
     return (
       <div 
-        className={`bg-card border rounded-lg overflow-hidden relative group ${isWinner ? 'border-yellow-500 shadow-lg' : 'border-border'} ${isEditable ? 'cursor-pointer hover:border-primary transition-colors' : ''}`}
-        onClick={() => isEditable && handleEditClick(match)}
+        className={`bg-card border rounded-lg overflow-hidden relative group transition-all ${
+          isWinner ? 'border-yellow-500 shadow-lg' : 'border-border'
+        } ${
+          isEditable ? 'cursor-move hover:border-primary' : ''
+        } ${
+          isDragOver ? 'ring-2 ring-primary scale-105' : ''
+        } ${
+          draggedMatch?.id === match.id ? 'opacity-50' : ''
+        }`}
+        draggable={isEditable}
+        onDragStart={handleDragStart}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onDragEnd={handleDragEnd}
+        onClick={(e) => {
+          if (isEditable && !draggedMatch) {
+            e.stopPropagation();
+            handleEditClick(match);
+          }
+        }}
       >
         {isEditable && (
-          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="bg-primary text-primary-foreground rounded p-1">
+          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <div className="bg-primary text-primary-foreground rounded p-1 flex gap-1">
+              <Icon name="GripVertical" size={12} />
               <Icon name="Edit" size={12} />
             </div>
           </div>
