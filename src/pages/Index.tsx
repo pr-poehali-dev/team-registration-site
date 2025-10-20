@@ -13,8 +13,7 @@ interface Team {
   id: number;
   team_name: string;
   captain_name: string;
-  captain_email: string;
-  captain_phone: string;
+  captain_telegram: string;
   members_count: number;
   members_info: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -31,8 +30,7 @@ export default function Index() {
   const [formData, setFormData] = useState({
     team_name: '',
     captain_name: '',
-    captain_email: '',
-    captain_phone: '',
+    captain_telegram: '',
     members_count: '',
     members_info: ''
   });
@@ -48,8 +46,7 @@ export default function Index() {
     setFormData({
       team_name: '',
       captain_name: '',
-      captain_email: '',
-      captain_phone: '',
+      captain_telegram: '',
       members_count: '',
       members_info: ''
     });
@@ -243,11 +240,12 @@ export default function Index() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="members_count">Количество участников *</Label>
+                      <Label htmlFor="members_count">Количество участников (5-7) *</Label>
                       <Input
                         id="members_count"
                         type="number"
-                        min="1"
+                        min="5"
+                        max="7"
                         value={formData.members_count}
                         onChange={(e) => setFormData({...formData, members_count: e.target.value})}
                         placeholder="5"
@@ -257,31 +255,16 @@ export default function Index() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="captain_email">Email капитана *</Label>
-                      <Input
-                        id="captain_email"
-                        type="email"
-                        value={formData.captain_email}
-                        onChange={(e) => setFormData({...formData, captain_email: e.target.value})}
-                        placeholder="captain@example.com"
-                        required
-                        className="border-primary/20 focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="captain_phone">Телефон капитана</Label>
-                      <Input
-                        id="captain_phone"
-                        type="tel"
-                        value={formData.captain_phone}
-                        onChange={(e) => setFormData({...formData, captain_phone: e.target.value})}
-                        placeholder="+7 (999) 123-45-67"
-                        className="border-primary/20 focus:border-primary"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="captain_telegram">Telegram капитана *</Label>
+                    <Input
+                      id="captain_telegram"
+                      value={formData.captain_telegram}
+                      onChange={(e) => setFormData({...formData, captain_telegram: e.target.value})}
+                      placeholder="@username"
+                      required
+                      className="border-primary/20 focus:border-primary"
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -377,13 +360,8 @@ export default function Index() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Email:</span> {team.captain_email}
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Телефон:</span> {team.captain_phone || '—'}
-                            </div>
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Telegram:</span> {team.captain_telegram}
                           </div>
                           {team.members_info && (
                             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
@@ -455,7 +433,7 @@ export default function Index() {
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold mb-2">Требования к команде</h3>
-                      <p className="text-muted-foreground">Минимальное количество участников — 1 человек. Максимальное — не ограничено.</p>
+                      <p className="text-muted-foreground">Количество участников в команде: от 5 до 7 человек.</p>
                     </div>
                   </div>
                 </div>
