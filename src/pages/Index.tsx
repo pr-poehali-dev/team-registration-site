@@ -22,7 +22,7 @@ interface Team {
 }
 
 export default function Index() {
-  const [activeSection, setActiveSection] = useState<'home' | 'register' | 'teams' | 'rules' | 'contacts'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'register' | 'teams' | 'rules' | 'contacts' | 'schedule'>('home');
   const [isAdmin, setIsAdmin] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const { toast } = useToast();
@@ -122,6 +122,14 @@ export default function Index() {
               >
                 <Icon name="Mail" size={18} className="mr-2" />
                 Контакты
+              </Button>
+              <Button 
+                variant={activeSection === 'schedule' ? 'default' : 'ghost'} 
+                onClick={() => setActiveSection('schedule')}
+                className="transition-all"
+              >
+                <Icon name="Calendar" size={18} className="mr-2" />
+                Сетка
               </Button>
             </div>
             <Button
@@ -273,7 +281,7 @@ export default function Index() {
                       id="members_info"
                       value={formData.members_info}
                       onChange={(e) => setFormData({...formData, members_info: e.target.value})}
-                      placeholder="Укажите ФИО участников команды..."
+                      placeholder="Укажите ФИО всех участников команды (5-7 человек), каждый с новой строки"
                       rows={6}
                       className="border-primary/20 focus:border-primary"
                     />
@@ -413,7 +421,7 @@ export default function Index() {
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold mb-2">Модерация заявки</h3>
-                      <p className="text-muted-foreground">После отправки заявка поступает на проверку администратору. Срок рассмотрения — до 3 рабочих дней.</p>
+                      <p className="text-muted-foreground">После отправки заявка поступает в Telegram администраторов для проверки. Срок рассмотрения — до 3 рабочих дней.</p>
                     </div>
                   </div>
 
@@ -423,7 +431,7 @@ export default function Index() {
                     </div>
                     <div>
                       <h3 className="font-heading font-semibold mb-2">Уведомление о результате</h3>
-                      <p className="text-muted-foreground">Решение по заявке будет отправлено на указанный email капитана команды.</p>
+                      <p className="text-muted-foreground">Решение по заявке будет отправлено в Telegram капитану команды.</p>
                     </div>
                   </div>
 
@@ -445,6 +453,27 @@ export default function Index() {
                       При возникновении вопросов обращайтесь в раздел <button onClick={() => setActiveSection('contacts')} className="text-primary underline hover:no-underline">Контакты</button>
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeSection === 'schedule' && (
+          <div className="max-w-6xl mx-auto animate-fade-in">
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-3xl font-heading flex items-center gap-3">
+                  <Icon name="Calendar" size={32} className="text-primary" />
+                  Сетка мероприятия
+                </CardTitle>
+                <CardDescription>Расписание игр и турнирная таблица</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Icon name="CalendarClock" size={64} className="text-muted-foreground mx-auto mb-4" />
+                  <p className="text-xl text-muted-foreground mb-2">Сетка появится после завершения регистрации</p>
+                  <p className="text-sm text-muted-foreground">Здесь будет отображаться расписание игр и результаты</p>
                 </div>
               </CardContent>
             </Card>
