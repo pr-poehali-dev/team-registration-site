@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Получить настройки регистрации",
+      "method": "GET",
+      "path": "/?resource=settings",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Получить список команд",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

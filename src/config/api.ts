@@ -7,13 +7,13 @@ const USE_TIMEWEB_API = false;
 export const API_CONFIG = {
   TEAMS_URL: USE_TIMEWEB_API 
     ? '/php-backend/api/teams.php'
-    : 'https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe',
+    : 'https://functions.poehali.dev/65f0f8df-228a-4bd5-ab3d-1ab2c6a091ca',
   
   SETTINGS_URL: USE_TIMEWEB_API
     ? '/php-backend/api/teams.php'
-    : 'https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe',
+    : 'https://functions.poehali.dev/65f0f8df-228a-4bd5-ab3d-1ab2c6a091ca',
   
   AUTH_URL: USE_TIMEWEB_API
     ? '/php-backend/api/teams.php'
-    : 'https://functions.poehali.dev/770caae7-f99a-46a7-9d02-36b5270e76fe'
+    : 'https://functions.poehali.dev/65f0f8df-228a-4bd5-ab3d-1ab2c6a091ca'
 };
